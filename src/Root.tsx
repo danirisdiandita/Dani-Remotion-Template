@@ -1,11 +1,22 @@
 import { Composition, staticFile } from "remotion";
 import { getVideoMetadata } from "@remotion/media-utils";
+import { z } from "zod";
 import { HelloWorld, myCompSchema } from "./HelloWorld";
 import { Logo, myCompSchema2 } from "./HelloWorld/Logo";
 import { DaniComp } from "./DaniComp";
 
-// Video Sequence Configuration
-const videoSequence = [
+// 1. Define the schema for the video sequence
+export const videoSequenceSchema = z.object({
+  videoSequence: z.array(
+    z.object({
+      src: z.string(),
+      text: z.string(),
+    })
+  ),
+});
+
+// 2. Default Configuration (used if no props are provided)
+const defaultVideoSequence = [
   { src: "video-assets/reactions/001.mp4", text: "POV: you figured out why everyone's deleting chatgpt 💀" },
   { src: "video-assets/demo/upload/001.mp4", text: "upload your pdf 😊" },
   { src: "video-assets/demo/quiz/001.mp4", text: "unlimited quizz 🔥" },
@@ -54,10 +65,16 @@ export const RemotionRoot: React.FC = () => {
         fps={30}
         width={1080}
         height={1920}
+        schema={videoSequenceSchema}
+        defaultProps={{
+          videoSequence: defaultVideoSequence,
+        }}
         calculateMetadata={async ({ props }) => {
           const fps = 30;
+          const sequence = props.videoSequence || defaultVideoSequence;
+          
           const durations = await Promise.all(
-            videoSequence.map(async (v) => {
+            sequence.map(async (v) => {
               const metadata = await getVideoMetadata(staticFile(v.src));
               return Math.floor(metadata.durationInSeconds * fps);
             })
@@ -69,7 +86,7 @@ export const RemotionRoot: React.FC = () => {
             durationInFrames: totalDuration,
             props: {
               ...props,
-              segments: videoSequence.map((v, i) => ({
+              segments: sequence.map((v, i) => ({
                 ...v,
                 durationInFrames: durations[i]
               }))

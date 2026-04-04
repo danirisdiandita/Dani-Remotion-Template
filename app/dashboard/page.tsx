@@ -30,6 +30,12 @@ export default function DashboardPage() {
 
   if (!session) return null;
 
+  const sampleVideoSequence = [
+    { src: "video-assets/reactions/001.mp4", text: "POV: You found the perfect video tool 🚀" },
+    { src: "video-assets/demo/upload/001.mp4", text: "Just upload your assets" },
+    { src: "video-assets/demo/quiz/001.mp4", text: "And let it render automatically ✨" }
+  ];
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -53,7 +59,7 @@ export default function DashboardPage() {
           <CardContent className="mt-auto">
             <Button 
               className="w-full" 
-              onClick={() => startRender()} 
+              onClick={() => startRender({ videoSequence: sampleVideoSequence })} 
               disabled={isPending}
             >
               {isPending ? (

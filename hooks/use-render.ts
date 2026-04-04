@@ -10,11 +10,22 @@ interface RenderResponse {
   error?: string;
 }
 
+interface RenderProps {
+  videoSequence: {
+    src: string;
+    text: string;
+  }[];
+}
+
 export function useRender() {
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (inputProps?: RenderProps) => {
       const response = await fetch("/api/render", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(inputProps || {}),
       });
       
       if (!response.ok) {

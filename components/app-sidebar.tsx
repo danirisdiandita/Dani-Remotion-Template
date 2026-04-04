@@ -6,6 +6,7 @@ import {
   Settings,
   LogOut,
   User,
+  SquareKanban,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -61,6 +62,12 @@ export function AppSidebar() {
                 <SidebarMenuButton render={<Link href="/dashboard" />}>
                   <LayoutDashboard className="size-4" />
                   <span>Dashboard</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton render={<Link href="/dashboard/projects" />}>
+                  <SquareKanban className="size-4" />
+                  <span>Projects</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>

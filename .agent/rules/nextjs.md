@@ -14,12 +14,20 @@ This project follows a strict architectural pattern for Next.js 15 apps. Follow 
 - **UI Component Library**: Use **shadcn/ui** default components.
 - **Strict Theme Rule**: Stay within the "Default" shadcn theme. Do NOT innovate or add custom complex design systems. Standard shadcn + Next.js is the preferred aesthetic.
 
-## 4. Data Fetching (TanStack Query)
+## 4. Data Fetching & API Architecture
 - **Library**: Use **TanStack Query (v5+)** for all client-side data fetching and mutations.
-- **Folder Structure**:
-    - Build custom hooks inside the `./hooks/` directory (e.g., `hooks/use-render-video.ts`).
-    - Summon these hooks into the client-side components.
-    - Do NOT call `fetch` or `axios` directly inside the component body.
+- **Server Components**: Fetch data directly from **Prisma** (DB) for SEO-critical or initial page loads. Do NOT `fetch` internal API routes from Server Components.
+- **Client Components**: 
+    - Use dedicated **API Routes** (`/app/api/...`) for CRUD operations triggered by user interaction.
+    - Wrap API calls in custom hooks within `hooks/` using `useQuery` and `useMutation`.
+- **API Route Structure**:
+    - Always verify sessions using `auth.api.getSession`.
+    - Return `NextResponse.json` with appropriate status codes (401 for unauthorized, 404 for not found, 500 for errors).
+    - Scope queries strictly to the `session.user.id`.
+- **Custom Hooks Pattern**:
+    - `useProjects()` for listing (queryKey: `["projects"]`).
+    - `useCreateProject()` for mutations (invalidate `["projects"]` on success).
+    - Example: `queryClient.invalidateQueries({ queryKey: ["projects", projectId] })`.
 
 ## 5. User Interaction (The "Sonner Workflow")
 For every interactive element (Buttons, Forms):

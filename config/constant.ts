@@ -21,6 +21,15 @@ const envSchema = z.object({
   // 🎥 Remotion
   REMOTION_STUDIO_PORT: z.coerce.number().default(8080),
 
+  // ☁️ S3 Configuration
+  S3_ENDPOINT: z.string().default("127.0.0.1"),
+  S3_PORT: z.coerce.number().default(9004),
+  S3_ACCESS_KEY: z.string().min(1, "S3_ACCESS_KEY is required"),
+  S3_SECRET_KEY: z.string().default(""),
+  S3_REGION: z.string().default(""),
+  S3_BUCKET: z.string().min(1, "S3_BUCKET is required"),
+  S3_USE_SSL: z.string().default("false").transform((val) => val === "true"),
+
   // 🛠️ Node Environment
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 });
@@ -42,6 +51,15 @@ export const ENV = {
   },
   email: {
     resend: parsedEnv.RESEND_API_KEY,
+  },
+  s3: {
+    endpoint: parsedEnv.S3_ENDPOINT,
+    port: parsedEnv.S3_PORT,
+    accessKey: parsedEnv.S3_ACCESS_KEY,
+    secretKey: parsedEnv.S3_SECRET_KEY,
+    region: parsedEnv.S3_REGION,
+    bucket: parsedEnv.S3_BUCKET,
+    useSsl: parsedEnv.S3_USE_SSL,
   },
   isProd: parsedEnv.NODE_ENV === "production",
   isDev: parsedEnv.NODE_ENV === "development",

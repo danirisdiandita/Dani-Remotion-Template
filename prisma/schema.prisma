@@ -2,8 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -21,6 +20,9 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
+  assets        Asset[]
+  projects      Project[]
+  renders       Render[]
 
   @@map("user")
 }
@@ -73,6 +75,7 @@ model Verification {
 model Render {
   id        String   @id @default(cuid())
   userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   status    String   @default("pending") // pending, processing, completed, failed
   s3Key     String?
   duration  Float?
@@ -80,4 +83,86 @@ model Render {
   updatedAt DateTime @updatedAt
 
   @@map("render")
+}
+
+
+model Asset {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String?
+  description String?
+  s3Key       String
+  type        String // video, image, audio
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  compositions CompositionAsset[]
+
+  @@map("asset")
+}
+
+
+model Project {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  counter     Int?     @default(0)
+
+  compositions Composition[]
+
+  @@map("project")
+}
+
+model Composition {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  order       Int      // Order of this composition in the project
+  name        String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  assets      CompositionAsset[]
+  overlayTexts OverlayText[]
+
+  @@map("composition")
+}
+
+model OverlayText {
+  id            String      @id @default(cuid())
+  compositionId String
+  composition   Composition @relation(fields: [compositionId], references: [id], onDelete: Cascade)
+  
+  text          String      // The text content
+  startTime     Float?      // Start time in seconds (optional)
+  endTime       Float?      // End time in seconds (optional)
+  positionX     Float?      // Horizontal percentage position (0-100)
+  positionY     Float?      // Vertical percentage position (0-100)
+  style         String?     // A JSON string for custom styling (fontSize, color, font, etc)
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("overlay_text")
+}
+model CompositionAsset {
+  id            String      @id @default(cuid())
+  compositionId String
+  composition   Composition @relation(fields: [compositionId], references: [id], onDelete: Cascade)
+  assetId       String
+  asset         Asset       @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  
+  text          String?     // Caption/text for this specific asset segment
+  order         Int         // Sequence index within the composition
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("composition_asset")
 }

@@ -3,9 +3,10 @@ import { renderMedia, selectComposition } from "@remotion/renderer";
 import path from "path";
 import fs from "fs";
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
-    console.log("🎬 Starting render process for Dani composition...");
+    const inputProps = await req.json();
+    console.log("🎬 Starting render process for Dani composition with inputProps:", inputProps);
 
     // 1. Resolve paths
     const entryFile = path.resolve(process.cwd(), "src/index.ts");
@@ -18,7 +19,6 @@ export async function POST() {
     }
 
     // 3. Bundle the project
-    // V4: bundle(entryPoint, onProgress, options)
     console.log("📦 Bundling project...");
     const serveUrl = await bundle(entryFile);
 
@@ -27,7 +27,7 @@ export async function POST() {
     const composition = await selectComposition({
       serveUrl,
       id: "Dani",
-      inputProps: {},
+      inputProps: inputProps || {},
     });
 
     // 5. Render the media
