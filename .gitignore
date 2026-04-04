@@ -9,3 +9,4 @@ out
 build
 .next
 /public/renders
+/generated/prisma
