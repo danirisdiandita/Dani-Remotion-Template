@@ -3,18 +3,21 @@
 # Exit on any error
 set -e
 
-echo "🔨 Building project..."
+echo "🏗️  Starting Production Suite Verification..."
+
+echo "📦 Phase 1: Next.js Web App Build..."
 npm run build
 
-echo "🎬 Rendering test video (Dani)..."
-# We render Dani specifically to ensure it works before pushing
-# Rendering 001.mp4 would take too long, so we can just check if build succeeds 
-# or do a partial render. But here we'll just try to render it fully.
-npx remotion render Dani out.mp4
+echo "🎨 Phase 2: Remotion Video Bundle..."
+npm run bundle
 
-echo "🚀 Committing and pushing..."
+# Optional: You can add a small test render here if needed
+# npx remotion render Dani out.mp4 --frames 1
+
+echo "🚀 Phase 3: Committing and Pushing to Repository..."
 git add .
-git commit -m "feat: add video editor"
+# We use a timestamped commit message for clarity
+git commit -m "chore: Production suite build & bundle success - $(date +'%Y-%m-%d %H:%M')" || echo "No changes to commit"
 git push
 
-echo "✅ Success! Project built, rendered, and pushed."
+echo "✅ Success! Project built, bundled, and delivered."

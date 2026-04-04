@@ -1,4 +1,6 @@
-/** @type {import('next').NextSize} */
-const nextConfig = {};
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  serverExternalPackages: ["@remotion/renderer", "@remotion/bundler"],
+};
 
 export default nextConfig;
