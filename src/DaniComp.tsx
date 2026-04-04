@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsoluteFill, Video, staticFile, Series } from 'remotion';
+import { AbsoluteFill, staticFile, Series, OffthreadVideo } from 'remotion';
 
 const VideoSegment: React.FC<{
   src: string;
@@ -8,7 +8,7 @@ const VideoSegment: React.FC<{
 }> = ({ src, text }) => {
   return (
     <AbsoluteFill style={{ backgroundColor: 'black' }}>
-      <Video
+      <OffthreadVideo
         src={staticFile(src)}
         style={{
           width: '100%',
@@ -23,7 +23,7 @@ const VideoSegment: React.FC<{
           justifyContent: 'flex-end',
           alignItems: 'center',
           padding: '0 80px',
-          paddingBottom: '240px',
+          paddingBottom: '360px',
         }}
       >
         <div
@@ -83,8 +83,8 @@ export const DaniComp: React.FC<{
   return (
     <Series>
       {segments.map((segment, index) => (
-        <Series.Sequence 
-          key={index} 
+        <Series.Sequence
+          key={index}
           durationInFrames={segment.durationInFrames}
         >
           <VideoSegment {...segment} />

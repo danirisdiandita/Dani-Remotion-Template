@@ -6,11 +6,11 @@ import fs from "fs";
 export async function POST() {
   try {
     console.log("🎬 Starting render process for Dani composition...");
-    
+
     // 1. Resolve paths
     const entryFile = path.resolve(process.cwd(), "src/index.ts");
     const outputLocation = path.resolve(process.cwd(), "public/renders/Dani.mp4");
-    
+
     // 2. Ensure output directory exists
     const outputDir = path.dirname(outputLocation);
     if (!fs.existsSync(outputDir)) {
@@ -27,7 +27,7 @@ export async function POST() {
     const composition = await selectComposition({
       serveUrl,
       id: "Dani",
-      inputProps: {}, 
+      inputProps: {},
     });
 
     // 5. Render the media
@@ -43,20 +43,21 @@ export async function POST() {
       chromiumOptions: {
         // Chromium options can be configured here if necessary
       },
+      timeoutInMilliseconds: 1000 * 60 * 10,
     });
 
     console.log("✅ Render complete:", outputLocation);
-    
-    return Response.json({ 
-      success: true, 
+
+    return Response.json({
+      success: true,
       url: "/renders/Dani.mp4",
       filename: `Dani-Production-${new Date().getTime()}.mp4`
     });
-    
+
   } catch (error) {
     console.error("❌ Render failed:", error);
-    return Response.json({ 
-      success: false, 
+    return Response.json({
+      success: false,
       error: error instanceof Error ? error.message : "Unknown error",
       details: String(error)
     }, { status: 500 });
