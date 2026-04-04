@@ -1,25 +1,30 @@
-import "./index.css";
-import { Composition } from "remotion";
+import { Composition, staticFile } from "remotion";
+import { getVideoMetadata } from "@remotion/media-utils";
 import { HelloWorld, myCompSchema } from "./HelloWorld";
 import { Logo, myCompSchema2 } from "./HelloWorld/Logo";
 import { DaniComp } from "./DaniComp";
 
-// Each <Composition> is an entry in the sidebar!
+// Video Sequence Configuration
+const videoSequence = [
+  { src: "video-assets/reactions/001.mp4", text: "POV: you figured out why everyone's deleting chatgpt 💀" },
+  { src: "video-assets/demo/upload/001.mp4", text: "upload your pdf 😊" },
+  { src: "video-assets/demo/quiz/001.mp4", text: "unlimited quizz 🔥" },
+  { src: "video-assets/demo/flashcard/001.mp4", text: "unlimited flashcard 🔥" },
+  { src: "video-assets/demo/mindmap/001.mp4", text: "mindmap 🔥" },
+  { src: "video-assets/demo/feynman/feynman.mp4", text: "feynman technique 🔥🔥🔥" },
+  { src: "video-assets/demo/printable-flashcard/001.mp4", text: "print your note, quizz, flashcard 🔥" }
+];
 
 export const RemotionRoot: React.FC = () => {
   return (
     <>
       <Composition
-        // You can take the "id" to render a video:
-        // npx remotion render HelloWorld
         id="HelloWorld"
         component={HelloWorld}
         durationInFrames={150}
         fps={30}
         width={1080}
         height={1920}
-        // You can override these props for each render:
-        // https://www.remotion.dev/docs/parametrized-rendering
         schema={myCompSchema}
         defaultProps={{
           titleText: "Welcome to Remotion",
@@ -29,7 +34,6 @@ export const RemotionRoot: React.FC = () => {
         }}
       />
 
-      {/* Mount any React component to make it show up in the sidebar and work on it individually! */}
       <Composition
         id="OnlyLogo"
         component={Logo}
@@ -47,10 +51,31 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="Dani"
         component={DaniComp}
-        durationInFrames={404}
         fps={30}
         width={1080}
         height={1920}
+        calculateMetadata={async ({ props }) => {
+          const fps = 30;
+          const durations = await Promise.all(
+            videoSequence.map(async (v) => {
+              const metadata = await getVideoMetadata(staticFile(v.src));
+              return Math.floor(metadata.durationInSeconds * fps);
+            })
+          );
+
+          const totalDuration = durations.reduce((a, b) => a + b, 0);
+
+          return {
+            durationInFrames: totalDuration,
+            props: {
+              ...props,
+              segments: videoSequence.map((v, i) => ({
+                ...v,
+                durationInFrames: durations[i]
+              }))
+            },
+          };
+        }}
       />
     </>
   );

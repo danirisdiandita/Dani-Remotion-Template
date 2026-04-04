@@ -5,7 +5,7 @@ const VideoSegment: React.FC<{
   src: string;
   text: string;
   durationInFrames: number;
-}> = ({ src, text, durationInFrames }) => {
+}> = ({ src, text }) => {
   return (
     <AbsoluteFill style={{ backgroundColor: 'black' }}>
       <Video
@@ -20,15 +20,15 @@ const VideoSegment: React.FC<{
         style={{
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'flex-end', // Align to bottom
-          alignItems: 'center', // Center horizontally
+          justifyContent: 'flex-end',
+          alignItems: 'center',
           padding: '0 80px',
-          paddingBottom: '240px', // Proper TikTok caption height
+          paddingBottom: '240px',
         }}
       >
         <div
           style={{
-            display: 'grid', // Use grid to stack layers perfectly center-to-center
+            display: 'grid',
             gridTemplateRows: '1fr',
             gridTemplateColumns: '1fr',
             textAlign: 'center',
@@ -73,71 +73,23 @@ const VideoSegment: React.FC<{
   );
 };
 
-export const DaniComp: React.FC = () => {
+export const DaniComp: React.FC<{
+  segments?: {
+    src: string;
+    text: string;
+    durationInFrames: number;
+  }[];
+}> = ({ segments = [] }) => {
   return (
     <Series>
-      {/* 0. Intro reaction - 4.5s (135 frames) */}
-      <Series.Sequence durationInFrames={135}>
-        <VideoSegment
-          src="video-assets/reactions/001.mp4"
-          text="POV: you figured out why everyone's deleting chatgpt 💀"
-          durationInFrames={135}
-        />
-      </Series.Sequence>
-
-      {/* 1. Upload your PDF - ~1.37s (41 frames) */}
-      <Series.Sequence durationInFrames={41}>
-        <VideoSegment
-          src="video-assets/demo/upload/001.mp4"
-          text="upload your pdf 😊"
-          durationInFrames={41}
-        />
-      </Series.Sequence>
-
-      {/* 2. Unlimited Quizz - ~1.81s (54 frames) */}
-      <Series.Sequence durationInFrames={54}>
-        <VideoSegment
-          src="video-assets/demo/quiz/001.mp4"
-          text="unlimited quizz 🔥"
-          durationInFrames={54}
-        />
-      </Series.Sequence>
-
-      {/* 3. Unlimited Flashcard - ~1.6s (48 frames) */}
-      <Series.Sequence durationInFrames={48}>
-        <VideoSegment
-          src="video-assets/demo/flashcard/001.mp4"
-          text="unlimited flashcard 🔥"
-          durationInFrames={48}
-        />
-      </Series.Sequence>
-
-      {/* 4. Mindmap - ~1.37s (41 frames) */}
-      <Series.Sequence durationInFrames={41}>
-        <VideoSegment
-          src="video-assets/demo/mindmap/001.mp4"
-          text="mindmap"
-          durationInFrames={41}
-        />
-      </Series.Sequence>
-
-      {/* 5. Feynman Technique - ~1.45s (43 frames) */}
-      <Series.Sequence durationInFrames={43}>
-        <VideoSegment
-          src="video-assets/demo/feynman/feynman.mp4"
-          text="feynman technique 🔥🔥🔥"
-          durationInFrames={43}
-        />
-      </Series.Sequence>
-
-      {/* 6. Print your note, quizz, flashcard - ~1.4s (42 frames) */}
-      <Series.Sequence durationInFrames={42}>
-        <VideoSegment
-          src="video-assets/demo/printable-flashcard/001.mp4"
-          text="print your note, quizz, flashcard 🔥"
-          durationInFrames={42}
-        />
-      </Series.Sequence>
+      {segments.map((segment, index) => (
+        <Series.Sequence 
+          key={index} 
+          durationInFrames={segment.durationInFrames}
+        >
+          <VideoSegment {...segment} />
+        </Series.Sequence>
+      ))}
     </Series>
   );
 };
