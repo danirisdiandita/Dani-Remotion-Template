@@ -1,0 +1,60 @@
+services:
+  video_editor_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: video_editor_app
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      video_editor_db:
+        condition: service_healthy
+      video_editor_s3:
+        condition: service_started
+
+  video_editor_db:
+    image: postgres:16-alpine
+    container_name: video_editor_db
+    restart: always
+    environment:
+      - POSTGRES_USER=nggakgitu
+      - POSTGRES_PASSWORD=nggakgitulagi
+      - POSTGRES_DB=video_editor
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nggakgitu"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  video_editor_s3:
+    image: rustfs/rustfs:latest
+    container_name: video_editor_s3
+    restart: always
+    ports:
+      - "9004:9000" # Host 9004 -> Container 9000
+      - "9001:9001" # Host 9001 -> Container 9001 (Console)
+    volumes:
+      - rustfs_data:/data
+    environment:
+      - RUSTFS_ACCESS_KEY=danilocal
+      - RUSTFS_SECRET_KEY=QlfIX52MsiDTFoiByWx8YoUH4
+      - RUSTFS_CONSOLE_ENABLE=true
+      - RUSTFS_SERVER_DOMAINS=localhost
+    command: >
+      --address :9000 
+      --console-enable 
+      --server-domains localhost 
+      --access-key danilocal 
+      --secret-key QlfIX52MsiDTFoiByWx8YoUH4 
+      /data
+
+volumes:
+  postgres_data:
+  rustfs_data:
