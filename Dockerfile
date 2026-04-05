@@ -8,6 +8,8 @@ COPY . .
 # Required environment variables for build-time (often needed by Next.js or Prisma)
 # In production, these should be passed as build args if needed, 
 # but for bundling they usually need the source.
+ARG NEXT_PUBLIC_APP_URL
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
 ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL
 ARG DATABASE_URL
