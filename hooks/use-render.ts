@@ -11,10 +11,11 @@ interface RenderResponse {
 }
 
 interface RenderProps {
-  videoSequence: {
+  videoSequence?: {
     src: string;
     text: string;
   }[];
+  projectId?: string;
 }
 
 export function useRender() {

@@ -12,6 +12,7 @@ import { useUploadAsset } from "@/hooks/use-assets";
 import { useDropzone } from "react-dropzone";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 interface CompositionEditorProps {
   composition: any;
@@ -41,7 +42,7 @@ export function CompositionEditor({ composition, open, onOpenChange }: Compositi
     });
   };
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
       'video/*': [],
@@ -49,6 +50,9 @@ export function CompositionEditor({ composition, open, onOpenChange }: Compositi
       'audio/*': []
     }
   });
+
+
+  const [selectedTab, setSelectedTab] = useState<string>("assets");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -84,13 +88,13 @@ export function CompositionEditor({ composition, open, onOpenChange }: Compositi
             </DialogHeader>
 
             <div className="flex-1 overflow-hidden p-6">
-              <Tabs defaultValue="assets" className="h-full flex flex-col">
-                <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted/50 p-1">
-                  <TabsTrigger value="assets" className="flex items-center gap-2 data-[selected]:bg-background data-[selected]:shadow-sm">
+              <Tabs defaultValue="assets" className="h-full flex flex-col" onValueChange={(value) => setSelectedTab(value)} value={selectedTab}>
+                <TabsList className="grid w-full grid-cols-2 mb-8 bg-muted/60 p-1.5 rounded-xl border border-border/50">
+                  <TabsTrigger value="assets" className={`flex items-center justify-center gap-2.5 py-2.5 text-xs font-bold transition-all text-muted-foreground hover:text-foreground hover:bg-muted/50 data-selected:bg-primary data-selected:text-primary-foreground data-selected:shadow-md rounded-lg ${selectedTab === "assets" ? "bg-primary text-primary-foreground shadow-md" : ""}`}>
                     <ImageIcon className="size-4" />
                     Audio & Video
                   </TabsTrigger>
-                  <TabsTrigger value="texts" className="flex items-center gap-2 data-[selected]:bg-background data-[selected]:shadow-sm">
+                  <TabsTrigger value="texts" className={`flex items-center justify-center gap-2.5 py-2.5 text-xs font-bold transition-all text-muted-foreground hover:text-foreground hover:bg-muted/50 data-selected:bg-primary data-selected:text-primary-foreground data-selected:shadow-md rounded-lg ${selectedTab === "texts" ? "bg-primary text-primary-foreground shadow-md" : ""}`}>
                     <Type className="size-4" />
                     Text Overlays
                   </TabsTrigger>
@@ -100,8 +104,8 @@ export function CompositionEditor({ composition, open, onOpenChange }: Compositi
                   <TabsContent value="assets" className="h-full mt-0 focus-visible:ring-0 w-full">
                     <div className="flex flex-col h-full w-full space-y-4">
                       {/* Dropzone Area */}
-                      <div 
-                        {...getRootProps()} 
+                      <div
+                        {...getRootProps()}
                         className={cn(
                           "flex flex-col items-center justify-center p-10 border-2 border-dashed rounded-3xl transition-all cursor-pointer group hover:bg-muted/10",
                           isDragActive ? "border-primary bg-primary/5 scale-[0.99] shadow-inner" : "border-border/50 bg-muted/5 hover:border-primary/30"
@@ -112,7 +116,7 @@ export function CompositionEditor({ composition, open, onOpenChange }: Compositi
                           "size-16 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300",
                           isDragActive ? "bg-primary text-white rotate-6 scale-110 shadow-lg shadow-primary/20" : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary group-hover:rotate-3"
                         )}>
-                           <Upload className="size-8" />
+                          <Upload className="size-8" />
                         </div>
                         <div className="text-center space-y-1">
                           <p className="text-sm font-bold tracking-tight">
@@ -122,7 +126,7 @@ export function CompositionEditor({ composition, open, onOpenChange }: Compositi
                             {isDragActive ? "Release to start upload" : "or click to select files"}
                           </p>
                         </div>
-                        
+
                         {isUploading && (
                           <div className="mt-4 flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-primary animate-pulse">
                             <Loader2 className="size-3 animate-spin" />
@@ -189,21 +193,21 @@ export function CompositionEditor({ composition, open, onOpenChange }: Compositi
                               <div key={ot.id} className="group flex items-center gap-4 p-4 rounded-xl border border-border/50 bg-card/30 shadow-sm hover:bg-card/50 hover:border-primary/10 transition-all relative overflow-hidden">
                                 <div className="absolute top-0 left-0 w-1 h-full bg-primary/20" />
                                 <div className="size-10 rounded-lg bg-muted/20 flex items-center justify-center shrink-0 border border-border/50">
-                                   <Type className="size-5 text-muted-foreground/40" />
+                                  <Type className="size-5 text-muted-foreground/40" />
                                 </div>
                                 <div className="flex-1 space-y-2">
-                                   <div className="flex items-center justify-between">
-                                      <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Text Content</Label>
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-[9px] text-muted-foreground/30 font-mono">ID: {ot.id.slice(-4)}</span>
-                                      </div>
-                                   </div>
-                                   <Textarea 
-                                     className="min-h-[100px] bg-background/50 border-border/50 focus:border-primary/30 focus:ring-primary/10 text-base leading-relaxed resize-none rounded-xl p-4 shadow-inner" 
-                                     defaultValue={ot.text}
-                                     placeholder="Type the overlay text here..."
-                                     onBlur={(e) => updateText({ id: ot.id, text: e.target.value })}
-                                   />
+                                  <div className="flex items-center justify-between">
+                                    <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Text Content</Label>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[9px] text-muted-foreground/30 font-mono">ID: {ot.id.slice(-4)}</span>
+                                    </div>
+                                  </div>
+                                  <Textarea
+                                    className="min-h-[100px] bg-background/50 border-border/50 focus:border-primary/30 focus:ring-primary/10 text-base leading-relaxed resize-none rounded-xl p-4 shadow-inner"
+                                    defaultValue={ot.text}
+                                    placeholder="Type the overlay text here..."
+                                    onBlur={(e) => updateText({ id: ot.id, text: e.target.value })}
+                                  />
                                 </div>
                                 <Button size="icon-xs" variant="ghost" className="opacity-0 group-hover:opacity-100 text-destructive/60 hover:text-destructive hover:bg-destructive/5" onClick={() => deleteText(ot.id)}>
                                   <Trash2 className="size-4" />

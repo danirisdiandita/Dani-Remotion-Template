@@ -52,10 +52,12 @@ import {
 } from "@dnd-kit/sortable";
 import { SortableCompositionCard } from "./sortable-composition-card";
 import { CompositionEditor } from "./composition-editor";
+import { useRender } from "@/hooks/use-render";
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: projectId } = use(params);
   const { data: project, isLoading, isError } = useProject(projectId);
+  const { mutate: renderVideo, isPending: isRendering } = useRender();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -192,17 +194,27 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     <Button
                       variant={canRender ? "default" : "outline"}
                       size="sm"
-                      disabled={!canRender}
+                      disabled={!canRender || isRendering}
                       className={cn(
                         "w-full h-9 shadow-lg transition-all duration-300",
                         canRender ? "bg-green-600 hover:bg-green-700 text-white shadow-green-500/20" : "opacity-50 cursor-not-allowed bg-muted/30"
                       )}
                       onClick={() => {
                         console.log("Triggering render for project:", projectId);
+                        renderVideo({ projectId });
                       }}
                     >
-                      <Play className={cn("mr-2 size-4", canRender && "fill-current animate-pulse")} />
-                      Render
+                      {isRendering ? (
+                        <>
+                          <Loader2 className="mr-2 size-4 animate-spin" />
+                          Rendering...
+                        </>
+                      ) : (
+                        <>
+                          <Play className={cn("mr-2 size-4", canRender && "fill-current animate-pulse")} />
+                          Render
+                        </>
+                      )}
                     </Button>
                   </div>
                 </TooltipTrigger>

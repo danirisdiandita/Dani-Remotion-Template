@@ -133,6 +133,29 @@ export const deleteFromS3 = async (filename: string) => {
     }
 };
 
+export const downloadFromS3 = async (s3Key: string, localPath: string) => {
+    const fs = await import('node:fs');
+    const { pipeline } = await import('node:stream/promises');
+
+    const bucketName = ENV.s3.bucket;
+    const command = new GetObjectCommand({
+        Bucket: bucketName,
+        Key: s3Key,
+    });
+
+    const response = await s3Client.send(command);
+    
+    if (!response.Body) {
+        throw new Error('Empty response body');
+    }
+
+    const outputStream = fs.createWriteStream(localPath);
+    // Cast to NodeJS.ReadableStream as AWS SDK's ReadableStream is slightly different
+    await pipeline(response.Body as NodeJS.ReadableStream, outputStream);
+    
+    return localPath;
+};
+
 /**
  * Uploads a local file to S3.
  */

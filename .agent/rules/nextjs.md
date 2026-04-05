@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Next.js Development Standards
 
 This project follows a strict architectural pattern for Next.js 15 apps. Follow these rules for all new features and modifications.
@@ -37,3 +41,4 @@ For every interactive element (Buttons, Forms):
 
 ---
 *Note: This rule file ensures a consistent, high-end "one-click" experience for the production engine.*
+## 6. Don't overexplain, just edit if asked, and when being asked, answer briefly and to the point
