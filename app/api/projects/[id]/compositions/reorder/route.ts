@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { syncCompositionOrders } from "@/lib/compositions";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth.api.getSession({
@@ -28,6 +29,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         })
       )
     );
+
+    // 🔄 Ensure normalization (1, 2, 3...)
+    await syncCompositionOrders(projectId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

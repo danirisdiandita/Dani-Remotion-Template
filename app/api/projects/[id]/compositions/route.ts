@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { syncCompositionOrders } from "@/lib/compositions";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth.api.getSession({
@@ -28,7 +29,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
-    // Get count of existing compositions for indexing
+    // Use current composition count + 1 as tentative order
     const compositionsCount = await prisma.composition.count({
         where: { projectId }
     });
@@ -41,6 +42,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         order: compositionsCount + 1,
       },
     });
+
+    // 🔄 Sync all orders to ensure no gaps (e.g. 1, 2, 3...)
+    await syncCompositionOrders(projectId);
 
     return NextResponse.json(composition);
   } catch (error) {

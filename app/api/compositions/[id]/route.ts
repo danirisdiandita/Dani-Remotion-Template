@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { syncCompositionOrders } from "@/lib/compositions";
 
 async function getCompositionWithProject(id: string, userId: string) {
     return await prisma.composition.findFirst({
@@ -41,6 +42,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       },
     });
 
+    // 🔄 Sync all orders to ensure no gaps (e.g. 1, 2, 3...)
+    await syncCompositionOrders(updated.projectId);
+
     return NextResponse.json(updated);
   } catch (error) {
     console.error("PATCH Composition Error:", error);
@@ -68,6 +72,9 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     await prisma.composition.delete({
       where: { id },
     });
+
+    // 🔄 Sync all orders to ensure no gaps (e.g. 1, 2, 3...) after deletion
+    await syncCompositionOrders(composition.projectId);
 
     return NextResponse.json({ success: true });
   } catch (error) {
