@@ -16,6 +16,8 @@ COPY . .
 # but for bundling they usually need the source.
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
 ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL
+ARG DATABASE_URL
+ENV DATABASE_URL=$DATABASE_URL
 
 # Generate Prisma Client
 RUN npx prisma generate
