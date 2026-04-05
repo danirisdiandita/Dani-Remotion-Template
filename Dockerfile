@@ -18,7 +18,7 @@ ARG NEXT_PUBLIC_BETTER_AUTH_URL
 ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL
 
 # Generate Prisma Client
-RUN npx prisma generate
+RUN npx prisma migrate deploy && npx prisma generate
 
 # Run the user-requested bundle and build steps
 RUN npm run bundle
