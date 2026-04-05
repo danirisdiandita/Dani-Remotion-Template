@@ -74,6 +74,23 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   const [localComps, setLocalComps] = useState<any[]>([]);
 
+  // Browser Storage Persistence
+  useEffect(() => {
+    const savedAsync = localStorage.getItem(`v-async-${projectId}`);
+    const savedCount = localStorage.getItem(`v-count-${projectId}`);
+    
+    if (savedAsync !== null) setIsAsync(savedAsync === "true");
+    if (savedCount !== null) setRenderCount(parseInt(savedCount) || 1);
+  }, [projectId]);
+
+  useEffect(() => {
+    localStorage.setItem(`v-async-${projectId}`, String(isAsync));
+  }, [isAsync, projectId]);
+
+  useEffect(() => {
+    localStorage.setItem(`v-count-${projectId}`, String(renderCount));
+  }, [renderCount, projectId]);
+
   // Sync server data to local state for smooth DnD
   useEffect(() => {
     if (project?.compositions) {
