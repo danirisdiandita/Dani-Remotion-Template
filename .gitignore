@@ -10,3 +10,4 @@ build
 .next
 /public/renders
 /generated/prisma
+/public/tmp
