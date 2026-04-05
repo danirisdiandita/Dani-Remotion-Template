@@ -58,7 +58,7 @@ export function useUpdateProject() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...data }: { id: string; name: string; description?: string; counter?: number }) => {
+    mutationFn: async ({ id, ...data }: { id: string; name: string; description?: string; caption?: string; counter?: number }) => {
       const res = await fetch(`/api/projects/${id}`, {
         method: "PATCH",
         body: JSON.stringify(data),

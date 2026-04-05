@@ -32,6 +32,14 @@ const envSchema = z.object({
 
   // 🛠️ Node Environment
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+
+  // ☁️ Google Cloud Tasks
+  GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL: z.string().optional(),
+  GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY: z.string().optional(),
+  GOOGLE_SERVICE_ACCOUNT_PROJECT_ID: z.string().optional(),
+  GOOGLE_VERTEX_AI_LOCATION: z.string().default("asia-southeast1"),
+  QUEUE_NAME: z.string().default("render-queue"),
+  VIDEO_PLATFORM_ENDPOINT_URL: z.string().optional(),
 });
 
 // Parse and export the validated environment variables
@@ -60,6 +68,14 @@ export const ENV = {
     region: parsedEnv.S3_REGION,
     bucket: parsedEnv.S3_BUCKET,
     useSsl: parsedEnv.S3_USE_SSL,
+  },
+  gcp: {
+    clientEmail: parsedEnv.GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL,
+    privateKey: parsedEnv.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+    projectId: parsedEnv.GOOGLE_SERVICE_ACCOUNT_PROJECT_ID,
+    location: parsedEnv.GOOGLE_VERTEX_AI_LOCATION,
+    queueName: parsedEnv.QUEUE_NAME,
+    endpointUrl: parsedEnv.VIDEO_PLATFORM_ENDPOINT_URL,
   },
   isProd: parsedEnv.NODE_ENV === "production",
   isDev: parsedEnv.NODE_ENV === "development",

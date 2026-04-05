@@ -76,11 +76,15 @@ model Render {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
   status    String   @default("pending") // pending, processing, completed, failed
   s3Key     String?
   duration  Float?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  caption     String?
+  checklisted Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@map("render")
 }
@@ -109,11 +113,13 @@ model Project {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name        String
   description String?
+  caption     String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   counter     Int?     @default(0)
 
   compositions Composition[]
+  renders      Render[]
 
   @@map("project")
 }

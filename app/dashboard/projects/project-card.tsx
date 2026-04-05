@@ -2,7 +2,7 @@
 
 import { useUpdateProject, useDeleteProject } from "@/hooks/use-project";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, ExternalLink, Loader2, Video } from "lucide-react";
+import { Pencil, Trash2, Loader2, Video, Download, Settings } from "lucide-react";
 import { useState } from "react";
 import {
   Dialog,
@@ -13,6 +13,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
@@ -31,15 +42,15 @@ interface ProjectCardProps {
 
 export function ProjectCard({ project }: ProjectCardProps) {
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const { mutate: update, isPending: isUpdating } = useUpdateProject();
   const { mutate: deleteProj, isPending: isDeleting } = useDeleteProject();
 
-  async function handleDelete(e: React.MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!confirm("Are you sure you want to delete this project? This will also delete all compositions and cannot be undone.")) return;
-    deleteProj(project.id);
+  async function handleDelete() {
+    deleteProj(project.id, {
+      onSuccess: () => setIsDeleteOpen(false)
+    });
   }
 
   async function handleUpdate(e: React.FormEvent<HTMLFormElement>) {
@@ -64,7 +75,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
         </div>
         <div className="flex flex-col min-w-0">
           <div className="flex items-center gap-2">
-            <Link 
+            <Link
               href={`/dashboard/projects/${project.id}`}
               className="text-lg font-semibold hover:underline decoration-primary' underline-offset-4 truncate"
             >
@@ -83,10 +94,10 @@ export function ProjectCard({ project }: ProjectCardProps) {
             Last Updated
           </span>
           <span className="text-xs text-foreground font-medium">
-            {new Date(project.updatedAt || project.createdAt).toLocaleDateString(undefined, { 
-                month: 'short', 
-                day: 'numeric', 
-                year: 'numeric' 
+            {new Date(project.updatedAt || project.createdAt).toLocaleDateString(undefined, {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric'
             })}
           </span>
         </div>
@@ -94,8 +105,8 @@ export function ProjectCard({ project }: ProjectCardProps) {
         <div className="flex items-center gap-2">
           <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
             <DialogTrigger render={<Button variant="ghost" size="icon-sm" className="hover:bg-muted" />}>
-                <Pencil className="size-4" />
-                <span className="sr-only">Edit</span>
+              <Pencil className="size-4" />
+              <span className="sr-only">Edit</span>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <form onSubmit={handleUpdate} className="space-y-6">
@@ -108,11 +119,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
                     <Label htmlFor={`name-${project.id}`}>Project Name</Label>
-                    <Input 
-                      id={`name-${project.id}`} 
-                      name="name" 
-                      defaultValue={project.name} 
-                      required 
+                    <Input
+                      id={`name-${project.id}`}
+                      name="name"
+                      defaultValue={project.name}
+                      required
                     />
                   </div>
                   <div className="grid gap-2">
@@ -134,21 +145,51 @@ export function ProjectCard({ project }: ProjectCardProps) {
             </DialogContent>
           </Dialog>
 
-          <Button 
-            variant="ghost" 
-            size="icon-sm" 
-            onClick={handleDelete}
-            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-            disabled={isDeleting}
-          >
-            {isDeleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
-            <span className="sr-only">Delete</span>
-          </Button>
+          <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+            <AlertDialogTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  disabled={isDeleting}
+                />
+              }
+            >
+              {isDeleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+              <span className="sr-only">Delete</span>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the project
+                  <strong> {project.name}</strong> and all associated video compositions and assets.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {isDeleting ? "Deleting..." : "Delete Project"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <Link href={`/dashboard/projects/${project.id}/renders`}>
+            <Button variant="outline" size="sm" className="hidden sm:flex border-blue-500/20 bg-blue-500/5 text-blue-600 hover:bg-blue-500/10 hover:text-blue-700">
+              Rendered
+              <Download className="ml-2 size-3" />
+            </Button>
+          </Link>
 
           <Link href={`/dashboard/projects/${project.id}`}>
             <Button variant="outline" size="sm" className="hidden sm:flex border-border/80">
-              View
-              <ExternalLink className="ml-2 size-3" />
+              Config
+              <Settings className="ml-2 size-3" />
             </Button>
           </Link>
         </div>

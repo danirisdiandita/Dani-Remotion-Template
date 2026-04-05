@@ -8,6 +8,15 @@ const VideoSegment: React.FC<{
 }> = ({ src, text }) => {
   return (
     <AbsoluteFill style={{ backgroundColor: 'black' }}>
+      <style>
+        {`
+          @font-face {
+            font-family: 'Montserrat';
+            src: url('${staticFile("Montserrat-ExtraBold.ttf")}') format('truetype');
+            font-weight: 800;
+          }
+        `}
+      </style>
       <OffthreadVideo
         src={staticFile(src)}
         style={{
@@ -22,51 +31,38 @@ const VideoSegment: React.FC<{
           flexDirection: 'column',
           justifyContent: 'flex-end',
           alignItems: 'center',
-          padding: '0 80px',
+          padding: '0 40px',
           paddingBottom: '360px',
         }}
       >
         <div
           style={{
-            display: 'grid',
-            gridTemplateRows: '1fr',
-            gridTemplateColumns: '1fr',
             textAlign: 'center',
             fontSize: '92px',
-            fontWeight: 500,
-            fontFamily: '"SF Pro Display", "Inter", "system-ui", sans-serif',
-            lineHeight: 1.1,
+            fontWeight: 800,
+            fontFamily: '"Montserrat", "Inter", sans-serif',
+            lineHeight: 1.15,
             letterSpacing: '-1.5px',
-            transform: 'rotate(-1deg)',
+            color: 'white',
+            // TikTok style crisp black border using massive omnidirectional text shadows.
+            // This natively supports emojis without causing the 'hollow outline' glitch of WebkitTextStroke
+            textShadow: `
+              -6px -6px 0 #000,  0   -6px 0 #000,   6px -6px 0 #000,
+               6px  0   0 #000,  6px  6px 0 #000,   0    6px 0 #000,
+              -6px  6px 0 #000, -6px  0   0 #000,
+              
+              /* Inner layer for density */
+              -3px -3px 0 #000,  0   -3px 0 #000,   3px -3px 0 #000,
+               3px  0   0 #000,  3px  3px 0 #000,   0    3px 0 #000,
+              -3px  3px 0 #000, -3px  0   0 #000,
+
+              /* Master drop shadow to pop from background */
+               0px 10px 30px rgba(0,0,0,0.8)
+            `,
             width: '100%',
           }}
         >
-          {/* Layer 1: The black border outline */}
-          <div
-            style={{
-              gridRow: 1,
-              gridColumn: 1,
-              color: 'black',
-              WebkitTextStroke: '16px black',
-              zIndex: 1,
-            }}
-          >
-            {text}
-          </div>
-
-          {/* Layer 2: The white fill */}
-          <div
-            style={{
-              gridRow: 1,
-              gridColumn: 1,
-              position: 'relative',
-              color: 'white',
-              zIndex: 2,
-              textShadow: 'rgba(0, 0, 0, 0.4) 0px 4px 10px',
-            }}
-          >
-            {text}
-          </div>
+          {text}
         </div>
       </AbsoluteFill>
     </AbsoluteFill>

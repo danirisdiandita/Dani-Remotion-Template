@@ -3,7 +3,7 @@ import { renderMedia, selectComposition } from "@remotion/renderer";
 import path from "path";
 import fs from "fs";
 import { prisma } from "@/lib/prisma";
-import { downloadFromS3 } from "@/lib/s3-utils";
+import { downloadFromS3, uploadFileToS3 } from "@/lib/s3-utils";
 import { randomUUID } from "crypto";
 
 export async function POST(req: Request) {
@@ -36,6 +36,7 @@ export async function POST(req: Request) {
     const videoSequence = [];
     const tmpDirEnv = process.env.TMP_RENDER_DIR || "./public/tmp";
     const absoluteTmpDir = path.resolve(process.cwd(), tmpDirEnv);
+    const downloadedFiles = [];
 
     // Ensure our tmp directory exists
     if (!fs.existsSync(absoluteTmpDir)) {
@@ -51,8 +52,6 @@ export async function POST(req: Request) {
         throw new Error(`Composition order ${comp.order} is missing assets or texts.`);
       }
 
-
-
       const assetIndex = counter % videoAssets.length;
       const textIndex = counter % texts.length;
 
@@ -66,6 +65,7 @@ export async function POST(req: Request) {
 
       console.log(`Downloading ${s3Key} to ${localPath}...`);
       await downloadFromS3(s3Key, localPath);
+      downloadedFiles.push(localPath);
 
       // Add to sequence - since staticFile() looks inside 'public/', 
       // we store the relative path if we use public/tmp
@@ -116,20 +116,55 @@ export async function POST(req: Request) {
 
     console.log("✅ Render complete:", outputLocation);
 
-    // 6. Increment counter successfully
+    // 6. Upload artifact to S3
+    const finalFilename = path.basename(outputLocation);
+    const s3Key = `renders/${project.id}/${finalFilename}`;
+    console.log(`☁️ Uploading artifact to S3 at ${s3Key}...`);
+    await uploadFileToS3(outputLocation, s3Key, "video/mp4");
+
+    // 7. Save record directly to Render database
+    console.log("💾 Logging Render into database...");
+    const renderRecord = await prisma.render.create({
+      data: {
+        userId: project.userId,
+        projectId: project.id,
+        s3Key: s3Key,
+        caption: project.caption,
+        status: "completed"
+      }
+    });
+
+    // 8. Increment sequence counter
     await prisma.project.update({
       where: { id: projectId },
       data: { counter: { increment: 1 } }
     });
 
+    // 9. Garbage collect local workspace (ingested S3 buffers & Render)
+    console.log("🧹 Cleaning up local workspace...");
+    for (const file of downloadedFiles) {
+      if (fs.existsSync(file)) fs.promises.unlink(file).catch(console.error);
+    }
+    if (fs.existsSync(outputLocation)) fs.promises.unlink(outputLocation).catch(console.error);
+
     return Response.json({
       success: true,
-      url: outputLocation.split('public')[1], // Return relative URL like '/renders/...'
-      filename: path.basename(outputLocation)
+      url: outputLocation.split('public')[1],
+      s3Key: renderRecord.s3Key,
+      filename: finalFilename
     });
 
   } catch (error) {
     console.error("❌ Render failed:", error);
+
+    // // Emergency cleanup in case of failure
+    // try {
+    //   const outputFilenameFallback = `public/renders/${req.url.split('/').pop() || ''}`; // Approximate
+    //   // But we mostly care about cleaning downloaded files here
+    //   // Ideally we would move downloadedFiles outside try-catch for perfect finally execution, 
+    //   // but this is safe enough. 
+    // } catch (e) {}
+
     return Response.json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",

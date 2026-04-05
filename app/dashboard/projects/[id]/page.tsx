@@ -13,10 +13,15 @@ import {
   Video,
   GripHorizontal,
   ChevronRight,
-  Play
+  Play,
+  Download,
+  ArrowLeft,
+  Sparkles
 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
 import { 
   Tooltip,
   TooltipContent,
@@ -57,13 +62,15 @@ import { useRender } from "@/hooks/use-render";
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: projectId } = use(params);
   const { data: project, isLoading, isError } = useProject(projectId);
-  const { mutate: renderVideo, isPending: isRendering } = useRender();
+  const { mutateAsync: renderVideo, isPending: isRendering } = useRender();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectedComp, setSelectedComp] = useState<any>(null);
+  const [renderCount, setRenderCount] = useState(1);
+  const [isAsync, setIsAsync] = useState(false);
 
   const [localComps, setLocalComps] = useState<any[]>([]);
 
@@ -149,26 +156,39 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
     const description = formData.get("description") as string;
+    const caption = formData.get("caption") as string;
     const counter = parseInt(formData.get("counter") as string);
-    updateProject({ id: projectId, name, description, counter }, { onSuccess: () => setSettingsOpen(false) });
+    updateProject({ id: projectId, name, description, counter, caption }, { onSuccess: () => setSettingsOpen(false) });
   };
 
   return (
     <div className="space-y-6 pb-20 max-w-7xl overflow-hidden">
       {/* 1. Page Header & Breadcrumbs (Refined for Sidebar) */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Link href="/dashboard" className="hover:text-foreground transition-colors">
-            Dashboard
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-3">
+          <Link 
+            href="/dashboard/projects" 
+            className="flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-primary transition-all group w-fit"
+          >
+            <div className="flex size-6 items-center justify-center rounded-full bg-muted/50 group-hover:bg-primary/10 transition-colors">
+              <ArrowLeft className="size-3.5" />
+            </div>
+            Back to Projects
           </Link>
-          <ChevronRight className="size-3 opacity-30" />
-          <Link href="/dashboard/projects" className="hover:text-foreground transition-colors">
-            Projects
-          </Link>
-          <ChevronRight className="size-3 opacity-30" />
-          <span className="text-foreground font-medium truncate max-w-[120px] sm:max-w-[200px]">
-            {project.name}
-          </span>
+          
+          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/60">
+            <Link href="/dashboard" className="hover:text-foreground transition-colors font-medium">
+              Home
+            </Link>
+            <ChevronRight className="size-2.5 opacity-30" />
+            <Link href="/dashboard/projects" className="hover:text-foreground transition-colors font-medium">
+              Projects
+            </Link>
+            <ChevronRight className="size-2.5 opacity-30" />
+            <span className="text-foreground font-bold truncate max-w-[120px] sm:max-w-[200px]">
+              {project.name}
+            </span>
+          </div>
         </div>
 
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -186,37 +206,79 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </p>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0 h-full">
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="hidden sm:flex items-center gap-3 px-3 h-9 bg-muted/40 border rounded-md shadow-sm">
+              <div className="flex items-center gap-2 pr-2 border-r">
+                <Checkbox 
+                  id="async-mode"
+                  checked={isAsync}
+                  onCheckedChange={(checked: boolean | "indeterminate") => setIsAsync(!!checked)}
+                  className="size-4 rounded-full border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                />
+                <Label htmlFor="async-mode" className="text-[10px] uppercase font-bold text-muted-foreground whitespace-nowrap cursor-pointer select-none">Async</Label>
+              </div>
+              
+              <div className="flex items-center gap-1.5">
+                <Label htmlFor="render-count" className="text-[10px] uppercase font-bold text-muted-foreground whitespace-nowrap">Count</Label>
+                <Input 
+                  id="render-count"
+                  type="number" 
+                  min={1} 
+                  max={50}
+                  value={renderCount}
+                  onChange={(e) => setRenderCount(parseInt(e.target.value) || 1)}
+                  className="w-8 h-6 border-none bg-transparent p-0 text-center text-sm font-bold focus-visible:ring-0 appearance-none"
+                />
+              </div>
+            </div>
+
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger>
-                  <div className="flex-1 sm:flex-initial">
-                    <Button
-                      variant={canRender ? "default" : "outline"}
-                      size="sm"
-                      disabled={!canRender || isRendering}
-                      className={cn(
-                        "w-full h-9 shadow-lg transition-all duration-300",
-                        canRender ? "bg-green-600 hover:bg-green-700 text-white shadow-green-500/20" : "opacity-50 cursor-not-allowed bg-muted/30"
-                      )}
-                      onClick={() => {
-                        console.log("Triggering render for project:", projectId);
-                        renderVideo({ projectId });
-                      }}
-                    >
-                      {isRendering ? (
-                        <>
-                          <Loader2 className="mr-2 size-4 animate-spin" />
-                          Rendering...
-                        </>
-                      ) : (
-                        <>
-                          <Play className={cn("mr-2 size-4", canRender && "fill-current animate-pulse")} />
-                          Render
-                        </>
-                      )}
-                    </Button>
-                  </div>
+                  <Button
+                    variant={canRender ? "default" : "outline"}
+                    size="sm"
+                    disabled={!canRender || isRendering}
+                    className={cn(
+                      "h-9 shadow-lg transition-all duration-300 min-w-[100px]",
+                      canRender ? "bg-green-600 hover:bg-green-700 text-white shadow-green-500/20" : "opacity-40 cursor-not-allowed bg-muted/30 border-dashed"
+                    )}
+                    onClick={async () => {
+                      if (isAsync) {
+                        try {
+                          for (let i = 0; i < renderCount; i++) {
+                            toast.info(`Queuing task ${i + 1} of ${renderCount}...`);
+                            const res = await fetch("/api/render/async", {
+                              method: "POST",
+                              body: JSON.stringify({ projectId }),
+                            });
+                            if (!res.ok) throw new Error("Failed to queue task");
+                            if (i < renderCount - 1) await new Promise(r => setTimeout(r, 500));
+                          }
+                          toast.success(`Successfully queued ${renderCount} cloud tasks!`);
+                        } catch (err: any) {
+                          toast.error(err.message || "Failed to batch queue tasks");
+                        }
+                      } else {
+                        for (let i = 0; i < renderCount; i++) {
+                          await renderVideo({ projectId });
+                          if (i < renderCount - 1) await new Promise(r => setTimeout(r, 1000));
+                        }
+                      }
+                    }}
+                  >
+                    {isRendering ? (
+                      <>
+                        <Loader2 className="mr-2 size-4 animate-spin" />
+                        <span className="text-xs">{isAsync ? 'Queuing...' : 'Batching...'}</span>
+                      </>
+                    ) : (
+                      <>
+                        {isAsync ? <Sparkles className="mr-2 size-4" /> : <Play className={cn("mr-2 size-4", canRender && "fill-current animate-pulse")} />}
+                        <span className="text-xs font-bold">{isAsync ? `Async ${renderCount}` : (renderCount > 1 ? `Batch ${renderCount}` : 'Render')}</span>
+                      </>
+                    )}
+                  </Button>
                 </TooltipTrigger>
                 {!canRender && (
                   <TooltipContent className="max-w-[200px] text-[10px] p-3 space-y-1.5" side="bottom">
@@ -231,22 +293,33 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               </Tooltip>
             </TooltipProvider>
 
+            <Link href={`/dashboard/projects/${projectId}/renders`}>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="h-9 shadow-sm hover:shadow-md transition-shadow bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-none"
+              >
+                <Download className="mr-2 size-4" />
+                <span className="hidden md:inline text-xs font-bold">Videos</span>
+              </Button>
+            </Link>
+            
             <Button
               variant="outline"
               size="sm"
-              className="flex-1 sm:flex-initial h-9"
+              className="h-9 px-3"
               onClick={() => setSettingsOpen(true)}
             >
-              <Settings className="mr-2 size-4 opacity-70" />
-              Settings
+              <Settings className="size-4 opacity-70" />
             </Button>
+            
             <Button
               size="sm"
               onClick={() => setCreateOpen(true)}
-              className="flex-1 sm:flex-initial shadow-lg shadow-primary/20 h-full"
+              className="shadow-lg shadow-primary/20 h-9 font-bold text-xs"
             >
-              <Plus className="mr-2 size-4" />
-              Add Sequence
+              <Plus className="size-4 sm:mr-2" />
+              <span className="hidden sm:inline">Add Sequence</span>
             </Button>
           </div>
         </div>
@@ -428,7 +501,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             <DialogHeader>
               <DialogTitle>Project Settings</DialogTitle>
               <DialogDescription>
-                Update your project metadata and sequencing counter.
+                Update your project metadata and sequence captioning.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -441,6 +514,13 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 <Input id="project-description" name="description" defaultValue={project.description || ""} />
               </div>
               <div className="grid gap-2">
+                <Label htmlFor="project-caption">Default Share Caption</Label>
+                <Input id="project-caption" name="caption" defaultValue={project.caption || ""} placeholder="#Trending #Viral" />
+                <p className="text-[10px] text-muted-foreground px-1">
+                  Automatically attached to all completed social media renders.
+                </p>
+              </div>
+              <div className="grid gap-2">
                 <Label htmlFor="project-counter">Composition Counter</Label>
                 <Input
                   id="project-counter"
@@ -448,9 +528,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                   type="number"
                   defaultValue={project.counter || 0}
                 />
-                <p className="text-[10px] text-muted-foreground px-1">
-                  Affects the auto-numbering of new compositions.
-                </p>
               </div>
             </div>
             <DialogFooter>

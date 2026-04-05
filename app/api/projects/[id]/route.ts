@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { deleteMultipleFromS3 } from "@/lib/s3-utils";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth.api.getSession({
@@ -14,7 +15,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   try {
     const { id } = await params;
-    const { name, description, counter } = await req.json();
+    const { name, description, counter, caption } = await req.json();
 
     const project = await prisma.project.update({
       where: { 
@@ -24,6 +25,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       data: {
         name,
         description,
+        caption,
         counter: counter !== undefined ? parseInt(counter) : undefined,
       },
     });
@@ -47,6 +49,27 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   try {
     const { id } = await params;
     
+    // Fetch all associated renders to get S3 keys
+    const renders = await prisma.render.findMany({
+      where: {
+        projectId: id,
+        userId: session.user.id
+      },
+      select: { s3Key: true }
+    });
+
+    const s3Keys = renders.map(r => r.s3Key).filter(Boolean) as string[];
+
+    // Clear artifacts from S3
+    if (s3Keys.length > 0) {
+      try {
+        await deleteMultipleFromS3(s3Keys);
+        console.log(`🧹 Scrubbed ${s3Keys.length} video artifacts from S3 for project: ${id}`);
+      } catch (s3Error) {
+        console.error("⚠️ S3 cleanup failed during project deletion, continuing with DB wipe:", s3Error);
+      }
+    }
+
     await prisma.project.delete({
       where: { 
         id, 
