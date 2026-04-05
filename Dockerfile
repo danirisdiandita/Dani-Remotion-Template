@@ -53,13 +53,21 @@ RUN apt install -y \
   libatk-bridge2.0-0 \
   libpango-1.0-0 \
   libcairo2 \
-  libcups2
+  libcups2 \
+  chromium
 
 # Set Chrome path for Puppeteer (Remotion often detects this or needs it)
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Set home directory for the user to avoid npx/npm permission issues
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 --home /home/nextjs --shell /bin/sh --ingroup nodejs nextjs && \
+    mkdir -p /home/nextjs && chown nextjs:nodejs /home/nextjs
+
+ENV HOME=/home/nextjs
+
+# Ensure Prisma is available for migrations at runtime
+RUN npm install -g prisma
 
 # Copy needed files from builder
 COPY --from=builder /app/public ./public
@@ -71,6 +79,9 @@ COPY --from=builder /app/package.json ./package.json
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Final ownership check to ensure everything is writeable by our production user
+RUN chown -R nextjs:nodejs /app
 
 USER nextjs
 
