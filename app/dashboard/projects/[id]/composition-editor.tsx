@@ -5,14 +5,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Trash2, Upload, Type, Music, Image as ImageIcon, Video, Loader2, Plus } from "lucide-react";
+import { Trash2, Upload, Type, Music, Image as ImageIcon, Video, Loader2, Plus, FileText, X } from "lucide-react";
 import { useCompositionAssets, useAddCompositionAsset, useDeleteCompositionAsset } from "@/hooks/use-composition-assets";
 import { useCompositionTexts, useAddCompositionText, useDeleteCompositionText, useUpdateCompositionText } from "@/hooks/use-composition-texts";
 import { useUploadAsset } from "@/hooks/use-assets";
 import { useDropzone } from "react-dropzone";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { toast } from "sonner";
 
 interface CompositionEditorProps {
   composition: any;
@@ -24,23 +25,30 @@ export function CompositionEditor({ composition, open, onOpenChange }: Compositi
   const { data: assets, isLoading: assetsLoading } = useCompositionAssets(composition?.id);
   const { data: texts, isLoading: textsLoading } = useCompositionTexts(composition?.id);
 
-  const { mutate: uploadAsset, isPending: isUploading } = useUploadAsset();
-  const { mutate: addAsset } = useAddCompositionAsset(composition?.id);
+  const { mutateAsync: uploadAsset } = useUploadAsset();
+  const { mutateAsync: addAsset } = useAddCompositionAsset(composition?.id);
   const { mutate: deleteAsset } = useDeleteCompositionAsset(composition?.id);
 
-  const { mutate: addText } = useAddCompositionText(composition?.id);
+  const { mutateAsync: addText, isPending: isAddingText } = useAddCompositionText(composition?.id);
   const { mutate: updateText } = useUpdateCompositionText(composition?.id);
   const { mutate: deleteText } = useDeleteCompositionText(composition?.id);
 
-  const onDrop = (acceptedFiles: File[]) => {
-    acceptedFiles.forEach(file => {
-      uploadAsset({ file }, {
-        onSuccess: (asset) => {
-          addAsset({ assetId: asset.id });
-        }
-      });
-    });
-  };
+  // --- Asset Upload (Batch) ---
+  const [uploadingCount, setUploadingCount] = useState(0);
+  
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    setUploadingCount(acceptedFiles.length);
+    for (const file of acceptedFiles) {
+      try {
+        const asset = await uploadAsset({ file });
+        await addAsset({ assetId: asset.id });
+      } catch (err) {
+        toast.error(`Failed: ${file.name}`);
+      } finally {
+        setUploadingCount((prev) => Math.max(0, prev - 1));
+      }
+    }
+  }, [uploadAsset, addAsset]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -51,8 +59,41 @@ export function CompositionEditor({ composition, open, onOpenChange }: Compositi
     }
   });
 
-
+  // --- Text Overlay ---
   const [selectedTab, setSelectedTab] = useState<string>("assets");
+  const [showAddTextForm, setShowAddTextForm] = useState(false);
+  const [pendingAddText, setPendingAddText] = useState("");
+  const [editingTexts, setEditingTexts] = useState<Record<string, string>>({});
+
+  const handleCreateLayers = async () => {
+    if (!pendingAddText.trim()) return;
+    const lines = pendingAddText.split(/\r?\n/).map(l => l.trim()).filter(l => !!l);
+    
+    try {
+      for (const line of lines) {
+        await addText({ text: line });
+      }
+      setPendingAddText("");
+      setShowAddTextForm(false);
+    } catch (err) {
+      toast.error("Failed to add layer(s)");
+    }
+  };
+
+  const handleUpdateLayer = (id: string) => {
+    const text = editingTexts[id];
+    if (text === undefined) return;
+    updateText({ id, text }, {
+      onSuccess: () => {
+        setEditingTexts(prev => {
+          const n = { ...prev };
+          delete n[id];
+          return n;
+        });
+        toast.success("Updated");
+      }
+    });
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -116,29 +157,22 @@ export function CompositionEditor({ composition, open, onOpenChange }: Compositi
                           "size-16 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300",
                           isDragActive ? "bg-primary text-white rotate-6 scale-110 shadow-lg shadow-primary/20" : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary group-hover:rotate-3"
                         )}>
-                          <Upload className="size-8" />
+                          {uploadingCount > 0 ? <Loader2 className="size-10 animate-spin" /> : <Upload className="size-8" />}
                         </div>
                         <div className="text-center space-y-1">
                           <p className="text-sm font-bold tracking-tight">
-                            {isDragActive ? "Drop the files here" : "Drag & drop media here"}
+                            {uploadingCount > 0 ? `Uploading ${uploadingCount}...` : isDragActive ? "Drop the files here" : "Drag & drop media here"}
                           </p>
                           <p className="text-xs text-muted-foreground/60">
-                            {isDragActive ? "Release to start upload" : "or click to select files"}
+                            {isDragActive ? "Release to start upload" : "multiple files supported"}
                           </p>
                         </div>
-
-                        {isUploading && (
-                          <div className="mt-4 flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-primary animate-pulse">
-                            <Loader2 className="size-3 animate-spin" />
-                            Uploading...
-                          </div>
-                        )}
                       </div>
 
                       <ScrollArea className="flex-1 pr-2">
                         {assetsLoading ? (
                           <div className="flex justify-center p-12"><Loader2 className="animate-spin opacity-20" /></div>
-                        ) : assets?.length === 0 ? null : (
+                        ) : (
                           <div className="space-y-2 pb-4">
                             {assets?.map((ca: any) => (
                               <div key={ca.id} className="group flex items-center gap-4 p-3 rounded-xl border border-border/50 bg-card/50 hover:bg-card hover:border-primary/20 transition-all shadow-sm">
@@ -170,50 +204,67 @@ export function CompositionEditor({ composition, open, onOpenChange }: Compositi
                           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Text Overlays</h3>
                           <p className="text-[10px] text-muted-foreground/60">Manage layered captions</p>
                         </div>
-                        <Button size="sm" variant="outline" onClick={() => addText({ text: "New Overlay" })} className="border-primary/20 hover:border-primary/50 text-primary bg-primary/5">
-                          <Plus className="mr-2 size-4" />
-                          Add layer
-                        </Button>
+                        {!showAddTextForm && (
+                          <Button size="sm" variant="outline" onClick={() => setShowAddTextForm(true)} className="border-primary/20 hover:border-primary/50 text-primary bg-primary/5">
+                            <Plus className="mr-2 size-4" />
+                            Add layer
+                          </Button>
+                        )}
                       </div>
+
+                      {showAddTextForm && (
+                        <div className="space-y-4 p-4 border rounded-xl bg-muted/5 transition-all">
+                          <Textarea 
+                            value={pendingAddText}
+                            onChange={(e) => setPendingAddText(e.target.value)}
+                            placeholder="Type text... (Multiline for multiple layers)"
+                            className="bg-background"
+                            autoFocus
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" className="flex-1" onClick={handleCreateLayers} disabled={!pendingAddText.trim() || isAddingText}>
+                              {isAddingText ? <Loader2 className="animate-spin size-4 mr-2" /> : <FileText className="size-4 mr-2" />}
+                              Create Layer(s)
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => { setShowAddTextForm(false); setPendingAddText(""); }}>
+                              <X className="size-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
 
                       <ScrollArea className="flex-1 pr-2">
                         {textsLoading ? (
                           <div className="flex justify-center p-12"><Loader2 className="animate-spin opacity-20" /></div>
-                        ) : texts?.length === 0 ? (
-                          <div className="flex flex-col items-center justify-center p-20 text-center border-2 border-dashed rounded-2xl bg-muted/5 border-border/30">
-                            <div className="size-12 rounded-2xl bg-muted flex items-center justify-center mb-4">
-                              <Type className="size-6 text-muted-foreground/40" />
-                            </div>
-                            <p className="text-sm text-muted-foreground font-semibold">No Text Layers</p>
-                            <p className="text-xs text-muted-foreground/60 mt-1">Add text to overlay on video</p>
-                          </div>
                         ) : (
                           <div className="space-y-3 pb-4">
-                            {texts?.map((ot: any) => (
-                              <div key={ot.id} className="group flex items-center gap-4 p-4 rounded-xl border border-border/50 bg-card/30 shadow-sm hover:bg-card/50 hover:border-primary/10 transition-all relative overflow-hidden">
-                                <div className="absolute top-0 left-0 w-1 h-full bg-primary/20" />
-                                <div className="size-10 rounded-lg bg-muted/20 flex items-center justify-center shrink-0 border border-border/50">
-                                  <Type className="size-5 text-muted-foreground/40" />
-                                </div>
-                                <div className="flex-1 space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Text Content</Label>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-[9px] text-muted-foreground/30 font-mono">ID: {ot.id.slice(-4)}</span>
-                                    </div>
+                            {texts?.map((ot: any) => {
+                              const pending = editingTexts[ot.id];
+                              const isEdited = pending !== undefined && pending !== ot.text;
+                              
+                              return (
+                                <div key={ot.id} className="group flex items-center gap-4 p-4 rounded-xl border border-border/50 bg-card/30 shadow-sm hover:bg-card/50 hover:border-primary/10 transition-all relative overflow-hidden">
+                                  <div className="absolute top-0 left-0 w-1 h-full bg-primary/20" />
+                                  <div className="size-10 rounded-lg bg-muted/20 flex items-center justify-center shrink-0 border border-border/50">
+                                    <Type className="size-5 text-muted-foreground/40" />
                                   </div>
-                                  <Textarea
-                                    className="min-h-[100px] bg-background/50 border-border/50 focus:border-primary/30 focus:ring-primary/10 text-base leading-relaxed resize-none rounded-xl p-4 shadow-inner"
-                                    defaultValue={ot.text}
-                                    placeholder="Type the overlay text here..."
-                                    onBlur={(e) => updateText({ id: ot.id, text: e.target.value })}
-                                  />
+                                  <div className="flex-1 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Content</Label>
+                                      {isEdited && <Button size="xs" variant="secondary" className="h-6 px-2 text-[10px]" onClick={() => handleUpdateLayer(ot.id)}>Save Sync</Button>}
+                                    </div>
+                                    <Textarea
+                                      className="min-h-[60px] bg-background/50 border-border/50 focus:border-primary/30 text-sm p-3 rounded-xl"
+                                      value={pending ?? ot.text}
+                                      onChange={(e) => setEditingTexts(v => ({ ...v, [ot.id]: e.target.value }))}
+                                    />
+                                  </div>
+                                  <Button size="icon-xs" variant="ghost" className="opacity-0 group-hover:opacity-100 text-destructive/60 hover:text-destructive hover:bg-destructive/5" onClick={() => deleteText(ot.id)}>
+                                    <Trash2 className="size-4" />
+                                  </Button>
                                 </div>
-                                <Button size="icon-xs" variant="ghost" className="opacity-0 group-hover:opacity-100 text-destructive/60 hover:text-destructive hover:bg-destructive/5" onClick={() => deleteText(ot.id)}>
-                                  <Trash2 className="size-4" />
-                                </Button>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                       </ScrollArea>
