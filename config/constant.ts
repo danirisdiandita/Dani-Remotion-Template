@@ -22,8 +22,8 @@ const getEnvBoolean = (key: string, defaultValue: boolean): boolean => {
 
 export const ENV = {
   db: {
-    direct: getEnv("DATABASE_URL"),
-    pool: getEnv("DATABASE_URL_POOL") || getEnv("DATABASE_URL"),
+    direct: getEnv("DATABASE_URL", "postgresql://user:pass@localhost:5432/db"),
+    pool: getEnv("DATABASE_URL_POOL") || getEnv("DATABASE_URL", "postgresql://user:pass@localhost:5432/db"),
   },
   auth: {
     secret: getEnv("BETTER_AUTH_SECRET", "dummy-secret-at-least-32-chars-long-1234"),
@@ -33,7 +33,7 @@ export const ENV = {
     port: getEnvNumber("REMOTION_STUDIO_PORT", 8080),
   },
   email: {
-    resend: getEnv("RESEND_API_KEY"),
+    resend: getEnv("RESEND_API_KEY", "re_dummy_123"),
   },
   s3: {
     endpoint: getEnv("S3_ENDPOINT", "127.0.0.1"),
