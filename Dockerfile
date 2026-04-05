@@ -24,7 +24,7 @@ RUN npx prisma generate
 
 # Run the user-requested bundle and build steps
 RUN npm run bundle
-RUN npm run build
+RUN SKIP_ENV_VALIDATION=1 npm run build
 
 # Stage 3: Production
 FROM node:22-bookworm-slim AS runner
