@@ -3,7 +3,7 @@ FROM node:22-bookworm-slim AS deps
 WORKDIR /app
 COPY package*.json ./
 # Install all dependencies including devDependencies (needed for build and bundle)
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # Stage 2: Build
 FROM node:22-bookworm-slim AS builder
