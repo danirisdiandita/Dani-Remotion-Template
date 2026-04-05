@@ -7,6 +7,11 @@ import { ENV, CONSTANTS } from "@/config/constant";
 const resend = new Resend(ENV.email.resend);
 
 export const auth = betterAuth({
+  baseURL: ENV.auth.url,
+  trustedOrigins: [
+    ENV.auth.url,
+    "https://video-templater.up.railway.app"
+  ],
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
