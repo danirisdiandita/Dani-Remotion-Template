@@ -18,7 +18,7 @@ ARG NEXT_PUBLIC_BETTER_AUTH_URL
 ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL
 
 # Generate Prisma Client
-RUN npx prisma migrate deploy && npx prisma generate
+RUN npx prisma generate
 
 # Run the user-requested bundle and build steps
 RUN npm run bundle
@@ -78,4 +78,4 @@ ENV PORT 3000
 # set hostname to localhost
 ENV HOSTNAME "0.0.0.0"
 
-CMD ["node", "server.js"]
+CMD npx prisma migrate deploy && node server.js
