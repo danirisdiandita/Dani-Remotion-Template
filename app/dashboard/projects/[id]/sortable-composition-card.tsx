@@ -16,12 +16,14 @@ interface SortableCompositionCardProps {
   composition: any;
   onEdit: (comp: any) => void;
   onDelete: (id: string) => void;
+  onClick?: () => void;
 }
 
 export function SortableCompositionCard({ 
     composition, 
     onEdit, 
-    onDelete 
+    onDelete,
+    onClick
 }: SortableCompositionCardProps) {
   const {
     attributes,
@@ -41,7 +43,10 @@ export function SortableCompositionCard({
 
   return (
     <div ref={setNodeRef} style={style} className="touch-none shrink-0 group">
-      <Card className="w-[280px] overflow-hidden border-border/50 hover:border-primary/50 transition-all duration-200">
+      <Card 
+        onClick={onClick}
+        className="w-[280px] overflow-hidden border-border/50 hover:border-primary/50 transition-all duration-200 cursor-pointer active:scale-[0.98]"
+      >
         <div className="aspect-video bg-muted/50 relative flex items-center justify-center">
             {/* Grip handle for DnD */}
             <div 

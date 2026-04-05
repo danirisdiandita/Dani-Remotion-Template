@@ -79,7 +79,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         userId: session.user.id 
       },
       include: {
-        compositions: true
+        compositions: {
+          include: {
+            assets: {
+              include: {
+                asset: true
+              }
+            },
+            overlayTexts: true
+          }
+        }
       }
     });
 

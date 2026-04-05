@@ -1,21 +1,30 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import { useProject, useUpdateProject } from "@/hooks/use-project";
 import { useCreateComposition, useUpdateComposition, useDeleteComposition, useReorderCompositions } from "@/hooks/use-composition";
 import { use, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { 
-  ChevronLeft, 
-  Plus, 
-  Loader2, 
-  Settings, 
+import {
+  ChevronLeft,
+  Plus,
+  Loader2,
+  Settings,
   Video,
   GripHorizontal,
-  ChevronRight
+  ChevronRight,
+  Play
 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -27,7 +36,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  DndContext, 
+  DndContext,
   closestCenter,
   KeyboardSensor,
   PointerSensor,
@@ -42,13 +51,15 @@ import {
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { SortableCompositionCard } from "./sortable-composition-card";
+import { CompositionEditor } from "./composition-editor";
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: projectId } = use(params);
   const { data: project, isLoading, isError } = useProject(projectId);
-  
+
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectedComp, setSelectedComp] = useState<any>(null);
 
@@ -67,6 +78,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const { mutate: deleteComp } = useDeleteComposition(projectId);
   const { mutate: reorderComps } = useReorderCompositions(projectId);
 
+  const canRender = localComps.length > 0 && localComps.every(comp => {
+    const hasVideo = comp.assets?.some((ca: any) => ca.asset.type === 'video');
+    const hasText = comp.overlayTexts?.length > 0;
+    return hasVideo && hasText;
+  });
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -77,7 +94,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     if (over && active.id !== over.id) {
       const oldIndex = localComps.findIndex((c) => c.id === active.id);
       const newIndex = localComps.findIndex((c) => c.id === over.id);
-      
+
       const newComps = arrayMove(localComps, oldIndex, newIndex);
       setLocalComps(newComps);
 
@@ -135,41 +152,95 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   };
 
   return (
-    <div className="space-y-8 flex flex-col min-h-screen">
-      {/* 1. Header & Breadcrumbs */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Link href="/dashboard/projects" className="hover:text-foreground transition-colors group flex items-center">
-             Projects
+    <div className="space-y-6 pb-20 max-w-7xl overflow-hidden">
+      {/* 1. Page Header & Breadcrumbs (Refined for Sidebar) */}
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Link href="/dashboard" className="hover:text-foreground transition-colors">
+            Dashboard
           </Link>
-          <ChevronRight className="size-3 text-muted-foreground/30" />
-          <span className="text-foreground font-medium truncate max-w-[200px]">
+          <ChevronRight className="size-3 opacity-30" />
+          <Link href="/dashboard/projects" className="hover:text-foreground transition-colors">
+            Projects
+          </Link>
+          <ChevronRight className="size-3 opacity-30" />
+          <span className="text-foreground font-medium truncate max-w-[120px] sm:max-w-[200px]">
             {project.name}
           </span>
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-tight">{project.name}</h1>
-              <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-bold">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/60 bg-clip-text text-transparent">
+                {project.name}
+              </h1>
+              <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-bold text-[10px] sm:text-xs">
                 {localComps.length} Sequence{localComps.length !== 1 ? 's' : ''}
               </Badge>
             </div>
+            <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-2 max-w-2xl">
+              <span className="shrink-0">{project.description || "No description provided."}</span>
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button 
-                variant="outline" 
-                size="sm" 
-                className="hidden sm:flex" 
-                onClick={() => setSettingsOpen(true)}
+
+          <div className="flex items-center gap-2 shrink-0 h-full">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <div className="flex-1 sm:flex-initial">
+                    <Button
+                      variant={canRender ? "default" : "outline"}
+                      size="sm"
+                      disabled={!canRender}
+                      className={cn(
+                        "w-full h-9 shadow-lg transition-all duration-300",
+                        canRender ? "bg-green-600 hover:bg-green-700 text-white shadow-green-500/20" : "opacity-50 cursor-not-allowed bg-muted/30"
+                      )}
+                      onClick={() => {
+                        console.log("Triggering render for project:", projectId);
+                      }}
+                    >
+                      <Play className={cn("mr-2 size-4", canRender && "fill-current animate-pulse")} />
+                      Render
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                {!canRender && (
+                  <TooltipContent className="max-w-[200px] text-[10px] p-3 space-y-1.5" side="bottom">
+                    <p className="font-bold text-destructive flex items-center gap-1.5">
+                      <Video className="size-3" /> Cannot Render Yet
+                    </p>
+                    <p className="text-muted-foreground leading-relaxed">
+                      Each sequence must have at least <span className="text-white font-medium underline decoration-primary/50 underline-offset-2">1 Video</span> and <span className="text-white font-medium underline decoration-primary/50 underline-offset-2">1 Text Overlay</span> to proceed.
+                    </p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 sm:flex-initial h-9"
+              onClick={() => setSettingsOpen(true)}
             >
-              <Settings className="mr-2 size-4" />
+              <Settings className="mr-2 size-4 opacity-70" />
               Settings
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setCreateOpen(true)}
+              className="flex-1 sm:flex-initial shadow-lg shadow-primary/20 h-full"
+            >
+              <Plus className="mr-2 size-4" />
+              Add Sequence
             </Button>
           </div>
         </div>
       </div>
+
+      <Separator className="opacity-50" />
 
       {/* 2. Main Video Preview (Vertical 9:16 for Mobile) */}
       <div className="flex justify-center">
@@ -184,17 +255,17 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
           <CardContent className="p-3 border-t border-border/50 bg-background/50 flex items-center justify-between">
-             <div className="flex items-center gap-4">
-                <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 uppercase font-bold tracking-tight">
-                   <div className="size-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50" />
-                   Draft
-                </div>
-             </div>
-             <div className="flex items-center gap-2">
-               <Button size="xs" variant="secondary" className="font-bold text-[9px] uppercase h-6 px-2">
-                  Preview
-               </Button>
-             </div>
+            <div className="flex items-center gap-4">
+              <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 uppercase font-bold tracking-tight">
+                <div className="size-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50" />
+                Draft
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="xs" variant="secondary" className="font-bold text-[9px] uppercase h-6 px-2">
+                Preview
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -203,62 +274,65 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       <div className="space-y-4 pt-4 border-t border-border/40">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-semibold tracking-tight">Timeline</h2>
-            <GripHorizontal className="size-4 text-muted-foreground/40" />
+            <h2 className="text-lg sm:text-xl font-bold tracking-tight">Timeline</h2>
+            <GripHorizontal className="size-4 text-muted-foreground/30" />
           </div>
-          <Button size="sm" onClick={() => setCreateOpen(true)} className="rounded-full shadow-lg h-9 px-4">
-              <Plus className="mr-2 size-4" />
-              Add Sequence
-          </Button>
         </div>
 
         <div className="relative group/timeline px-1">
           {localComps.length > 0 ? (
             <div className="overflow-x-auto pb-6 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
-               <DndContext 
-                 sensors={sensors}
-                 collisionDetection={closestCenter}
-                 onDragEnd={handleDragEnd}
-               >
-                 <SortableContext 
-                    items={localComps.map(c => c.id)}
-                    strategy={horizontalListSortingStrategy}
-                 >
-                   <div className="flex items-start gap-5">
-                      {localComps.map((composition) => (
-                        <SortableCompositionCard 
-                          key={composition.id} 
-                          composition={composition}
-                          onEdit={(comp) => { setSelectedComp(comp); setEditOpen(true); }}
-                          onDelete={(id) => deleteComp(id)}
-                        />
-                      ))}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={localComps.map(c => c.id)}
+                  strategy={horizontalListSortingStrategy}
+                >
+                  <div className="flex items-start gap-5 w-max pb-4">
+                    {localComps.map((composition) => (
+                      <SortableCompositionCard
+                        key={composition.id}
+                        composition={composition}
+                        onClick={() => { setSelectedComp(composition); setEditorOpen(true); }}
+                        onEdit={(comp) => { setSelectedComp(comp); setEditOpen(true); }}
+                        onDelete={(id) => deleteComp(id)}
+                      />
+                    ))}
 
-                      {/* Spacer or trailing add button */}
-                      <button 
-                        onClick={() => setCreateOpen(true)}
-                        className="shrink-0 w-[180px] h-[157px] rounded-xl border-2 border-dashed border-border/40 hover:border-primary/40 hover:bg-primary/5 transition-all flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-primary group/add"
-                      >
-                         <Plus className="size-5 group-hover/add:scale-110 transition-transform" />
-                         <span className="text-xs font-semibold">Add Next</span>
-                      </button>
-                   </div>
-                 </SortableContext>
-               </DndContext>
+                    {/* Spacer or trailing add button */}
+                    <button
+                      onClick={() => setCreateOpen(true)}
+                      className="shrink-0 w-[280px] h-[228px] rounded-xl border-2 border-dashed border-border/40 hover:border-primary/50 hover:bg-primary/5 transition-all flex flex-col items-center justify-center gap-4 text-muted-foreground hover:text-primary group/add bg-muted/5 relative overflow-hidden"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-b from-primary/0 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="size-12 rounded-full bg-background border border-border shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform group-hover:shadow-md">
+                        <Plus className="size-6" />
+                      </div>
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-sm font-bold">Add New Sequence</span>
+                        <span className="text-[10px] opacity-60 uppercase tracking-widest font-mono">Insert at end</span>
+                      </div>
+                    </button>
+                  </div>
+                </SortableContext>
+              </DndContext>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center p-20 text-center border-dashed bg-muted/5 border-2 rounded-2xl border-border/50">
-               <div className="size-14 rounded-2xl bg-muted flex items-center justify-center mb-5 rotate-12 group-hover:rotate-0 transition-transform">
-                 <Video className="size-7 text-muted-foreground" />
-               </div>
-               <h3 className="text-xl font-bold">No sequences yet</h3>
-               <p className="text-muted-foreground text-sm max-w-[280px] mb-8 leading-relaxed">
-                 Build your video timeline by adding sequence blocks. Drag them to reorder.
-               </p>
-               <Button onClick={() => setCreateOpen(true)} size="lg" className="rounded-full px-8">
-                 <Plus className="mr-2 size-4" />
-                 Create Sequence
-               </Button>
+              <div className="size-14 rounded-2xl bg-muted flex items-center justify-center mb-5 rotate-12 group-hover:rotate-0 transition-transform">
+                <Video className="size-7 text-muted-foreground" />
+              </div>
+              <h3 className="text-xl font-bold">No sequences yet</h3>
+              <p className="text-muted-foreground text-sm max-w-[280px] mb-8 leading-relaxed">
+                Build your video timeline by adding sequence blocks. Drag them to reorder.
+              </p>
+              <Button onClick={() => setCreateOpen(true)} size="lg" className="rounded-full px-8">
+                <Plus className="mr-2 size-4" />
+                Create Sequence
+              </Button>
             </div>
           )}
         </div>
@@ -308,20 +382,20 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="edit-name">Sequence Name</Label>
-                <Input 
-                  id="edit-name" 
-                  name="name" 
-                  defaultValue={selectedComp?.name || ""} 
-                  placeholder="Sequence Name" 
+                <Input
+                  id="edit-name"
+                  name="name"
+                  defaultValue={selectedComp?.name || ""}
+                  placeholder="Sequence Name"
                 />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="edit-description">Description</Label>
-                <Input 
-                  id="edit-description" 
-                  name="description" 
-                  defaultValue={selectedComp?.description || ""} 
-                  placeholder="Description" 
+                <Input
+                  id="edit-description"
+                  name="description"
+                  defaultValue={selectedComp?.description || ""}
+                  placeholder="Description"
                 />
               </div>
             </div>
@@ -356,11 +430,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="project-counter">Composition Counter</Label>
-                <Input 
-                  id="project-counter" 
-                  name="counter" 
-                  type="number" 
-                  defaultValue={project.counter || 0} 
+                <Input
+                  id="project-counter"
+                  name="counter"
+                  type="number"
+                  defaultValue={project.counter || 0}
                 />
                 <p className="text-[10px] text-muted-foreground px-1">
                   Affects the auto-numbering of new compositions.
@@ -376,6 +450,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           </form>
         </DialogContent>
       </Dialog>
+
+      <CompositionEditor 
+        composition={selectedComp}
+        open={editorOpen}
+        onOpenChange={setEditorOpen}
+      />
     </div>
   );
 }
