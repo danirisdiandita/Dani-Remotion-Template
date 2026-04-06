@@ -16,12 +16,14 @@ interface RenderProps {
     text: string;
   }[];
   projectId?: string;
+  compositionType?: string;
 }
 
 export function useRender() {
   return useMutation({
     mutationFn: async (inputProps?: RenderProps) => {
-      const response = await fetch("/api/render", {
+      const endpoint = inputProps?.compositionType === "carousel" ? "/api/carousel" : "/api/render";
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

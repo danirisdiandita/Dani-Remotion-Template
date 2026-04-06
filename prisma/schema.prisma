@@ -117,6 +117,7 @@ model Project {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   counter     Int?     @default(0)
+  compositionType String? @default("video") // video, carousel
 
   compositions Composition[]
   renders      Render[]

@@ -32,7 +32,7 @@ export function useCreateProject() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { name: string; description?: string }) => {
+    mutationFn: async (data: { name: string; description?: string; compositionType?: string }) => {
       const res = await fetch("/api/projects", {
         method: "POST",
         body: JSON.stringify(data),

@@ -56,10 +56,15 @@ type RenderRecord = {
 interface RendersClientProps {
   projectId: string;
   projectName: string;
+  compositionType: string;
   initialRenders: RenderRecord[];
 }
 
-export function RendersClient({ projectId, projectName, initialRenders }: RendersClientProps) {
+export function RendersClient({ projectId, projectName, compositionType, initialRenders }: RendersClientProps) {
+
+  console.log('compositionType', compositionType)
+  const isCarousel = compositionType === "carousel";
+
   const router = useRouter();
 
   const parsedRenders = useMemo(() => {
@@ -144,7 +149,7 @@ export function RendersClient({ projectId, projectName, initialRenders }: Render
 
       if (!res.ok) throw new Error("Failed to bulk delete");
 
-      toast.success(`Deleted ${checkedIds.size} videos.`);
+      toast.success(`Deleted ${checkedIds.size} ${isCarousel ? 'files' : 'videos'}.`);
       setCheckedIds(new Set());
       router.refresh();
     } catch (err: any) {
@@ -157,9 +162,9 @@ export function RendersClient({ projectId, projectName, initialRenders }: Render
   const handleDeleteIndividual = async (id: string) => {
     try {
       const res = await fetch(`/api/renders/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete video");
+      if (!res.ok) throw new Error(`Failed to delete ${isCarousel ? 'file' : 'video'}`);
 
-      toast.success("Video deleted.");
+      toast.success(`${isCarousel ? 'File' : 'Video'} deleted.`);
       setCheckedIds(prev => {
         const next = new Set(prev);
         next.delete(id);
@@ -201,10 +206,12 @@ export function RendersClient({ projectId, projectName, initialRenders }: Render
     try {
       const response = await fetch(video.downloadUrl);
       const blob = await response.blob();
-      const file = new File([blob], `render-${video.id.slice(0, 8)}.mp4`, { type: 'video/mp4' });
+      const ext = isCarousel ? 'zip' : 'mp4';
+      const mime = isCarousel ? 'application/zip' : 'video/mp4';
+      const file = new File([blob], `render-${video.id.slice(0, 8)}.${ext}`, { type: mime });
       setShareFile(file);
     } catch (err: any) {
-      toast.error("Failed to load video for sharing");
+      toast.error(`Failed to load ${isCarousel ? 'file' : 'video'} for sharing`);
       setShareDialogOpen(false);
     } finally {
       setShareDialogLoading(false);
@@ -219,8 +226,8 @@ export function RendersClient({ projectId, projectName, initialRenders }: Render
       if (navigator.canShare && navigator.canShare({ files: [shareFile] })) {
         await navigator.share({
           files: [shareFile],
-          title: `Video from ${projectName}`,
-          text: selectedVideo.caption || `Check out this video!`
+          title: `${isCarousel ? 'Photos' : 'Video'} from ${projectName}`,
+          text: selectedVideo.caption || `Check out ${isCarousel ? 'these photos' : 'this video'}!`
         });
         toast.success("Shared successfully");
         setShareDialogOpen(false);
@@ -254,9 +261,9 @@ export function RendersClient({ projectId, projectName, initialRenders }: Render
 
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div className="space-y-1">
-            <h1 className="text-2xl font-bold tracking-tight">Exported Videos</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{isCarousel ? 'Exported Photos' : 'Exported Videos'}</h1>
             <p className="text-sm text-muted-foreground">
-              View and manage all generated videos for {projectName}.
+              View and manage all generated {isCarousel ? 'photo carousels' : 'videos'} for {projectName}.
             </p>
           </div>
 
@@ -300,9 +307,9 @@ export function RendersClient({ projectId, projectName, initialRenders }: Render
           <div className="p-4 bg-primary/10 rounded-full">
             <Video className="h-6 w-6 text-primary" />
           </div>
-          <h3 className="text-lg font-semibold tracking-tight">No videos exported yet</h3>
+          <h3 className="text-lg font-semibold tracking-tight">{isCarousel ? 'No photos exported yet' : 'No videos exported yet'}</h3>
           <p className="text-muted-foreground text-sm max-w-sm">
-            Videos rendered from the sequence editor will appear securely here.
+            {isCarousel ? 'Photos' : 'Videos'} rendered from the sequence editor will appear securely here.
           </p>
 
           <Link href={`/dashboard/projects/${projectId}`}>
@@ -398,7 +405,7 @@ export function RendersClient({ projectId, projectName, initialRenders }: Render
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete this exported video file from our Amazon S3 storage bucket and permanently wipe the configuration record from the database.
+              This action cannot be undone. This will permanently delete this exported {isCarousel ? 'zip' : 'video'} file from our Amazon S3 storage bucket and permanently wipe the configuration record from the database.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -418,7 +425,7 @@ export function RendersClient({ projectId, projectName, initialRenders }: Render
           <DialogHeader>
             <DialogTitle>Share External</DialogTitle>
             <DialogDescription>
-              {shareDialogLoading ? "Preparing high-quality file..." : "Your video is ready to share."}
+              {shareDialogLoading ? "Preparing high-quality file..." : `Your ${isCarousel ? 'file' : 'video'} is ready to share.`}
             </DialogDescription>
           </DialogHeader>
 
@@ -433,7 +440,7 @@ export function RendersClient({ projectId, projectName, initialRenders }: Render
                 <div className="p-3 bg-green-500/10 rounded-full">
                   <Check className="h-6 w-6 text-green-500" />
                 </div>
-                <p className="text-sm font-medium">Video Ready</p>
+                <p className="text-sm font-medium">{isCarousel ? 'File Ready' : 'Video Ready'}</p>
                 <p className="text-xs text-muted-foreground max-w-full px-4 truncate">{shareFile?.name}</p>
               </div>
             )}

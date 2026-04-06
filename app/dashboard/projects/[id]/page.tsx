@@ -105,9 +105,13 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const { mutate: reorderComps } = useReorderCompositions(projectId);
 
   const canRender = localComps.length > 0 && localComps.every(comp => {
-    const hasVideo = comp.assets?.some((ca: any) => ca.asset.type === 'video');
+    const hasAsset = comp.assets?.some((ca: any) => 
+      (project as any)?.compositionType === 'carousel' 
+        ? ['video', 'image'].includes(ca.asset.type)
+        : ca.asset.type === 'video'
+    );
     const hasText = comp.overlayTexts?.length > 0;
-    return hasVideo && hasText;
+    return (project as any)?.compositionType === 'carousel' ? hasAsset : (hasAsset && hasText);
   });
 
   const sensors = useSensors(
@@ -278,7 +282,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         }
                       } else {
                         for (let i = 0; i < renderCount; i++) {
-                          await renderVideo({ projectId });
+                          await renderVideo({ projectId, compositionType: (project as any)?.compositionType });
                           if (i < renderCount - 1) await new Promise(r => setTimeout(r, 1000));
                         }
                       }
@@ -303,7 +307,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                       <Video className="size-3" /> Cannot Render Yet
                     </p>
                     <p className="text-muted-foreground leading-relaxed">
-                      Each sequence must have at least <span className="text-white font-medium underline decoration-primary/50 underline-offset-2">1 Video</span> and <span className="text-white font-medium underline decoration-primary/50 underline-offset-2">1 Text Overlay</span> to proceed.
+                      {(project as any)?.compositionType === 'carousel'
+                        ? <>Each sequence must have at least <span className="text-white font-medium underline decoration-primary/50 underline-offset-2">1 Image/Video</span>.</>
+                        : <>Each sequence must have at least <span className="text-white font-medium underline decoration-primary/50 underline-offset-2">1 Video</span> and <span className="text-white font-medium underline decoration-primary/50 underline-offset-2">1 Text Overlay</span> to proceed.</>}
                     </p>
                   </TooltipContent>
                 )}
