@@ -1,3 +1,4 @@
+
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -28,21 +29,29 @@ export default async function ProjectRendersPage({ params }: { params: Promise<{
     orderBy: { createdAt: 'desc' }
   });
 
+  const isCarousel = (project as any).compositionType === "carousel";
+
   // Generate ultra-secure AWS presigned URLs directly in the server component for instant click-to-download
   const renderList = await Promise.all(renders.map(async (r) => {
     let downloadUrl = "";
     if (r.s3Key) {
-       // Request browser attachment header so clicking triggers file download natively
-       downloadUrl = await getPresignedDownloadUrl(r.s3Key, "video/mp4", `attachment; filename="Sequence-Action-${r.id.slice(-4)}.mp4"`);
+      // Request browser attachment header so clicking triggers file download natively
+      const mimeType = isCarousel ? "application/zip" : "video/mp4";
+      const extension = isCarousel ? "zip" : "mp4";
+      downloadUrl = await getPresignedDownloadUrl(r.s3Key, mimeType, `attachment; filename="Sequence-Action-${r.id.slice(-4)}.${extension}"`);
     }
     return { ...r, downloadUrl };
   }));
 
+
+  console.log('project.compositionType', project.compositionType)
+
   return (
-    <RendersClient 
-      projectId={projectId} 
-      projectName={project.name} 
-      initialRenders={renderList as any} 
+    <RendersClient
+      projectId={projectId}
+      projectName={project.name}
+      compositionType={(project as any).compositionType || "video"}
+      initialRenders={renderList as any}
     />
   );
 }

@@ -34,7 +34,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { name, description } = await req.json();
+    const { name, description, compositionType } = await req.json();
 
     if (!name) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -45,6 +45,7 @@ export async function POST(req: Request) {
         userId: session.user.id,
         name,
         description,
+        compositionType: compositionType || "video",
       },
     });
 

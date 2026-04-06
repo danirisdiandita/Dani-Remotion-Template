@@ -4,6 +4,7 @@ import { z } from "zod";
 import { HelloWorld, myCompSchema } from "./HelloWorld";
 import { Logo, myCompSchema2 } from "./HelloWorld/Logo";
 import { DaniComp } from "./DaniComp";
+import { CarouselComp } from "./CarouselComp";
 
 // 1. Define the schema for the video sequence
 export const videoSequenceSchema = z.object({
@@ -24,6 +25,23 @@ const defaultVideoSequence = [
   { src: "video-assets/demo/mindmap/001.mp4", text: "mindmap 🔥" },
   { src: "video-assets/demo/feynman/feynman.mp4", text: "feynman technique 🔥🔥🔥" },
   { src: "video-assets/demo/printable-flashcard/001.mp4", text: "print your note, quizz, flashcard 🔥" }
+];
+
+// 3. Define schema for the carousel sequence
+export const carouselSequenceSchema = z.object({
+  carouselSequence: z.array(
+    z.object({
+      src: z.string(),
+      title: z.string(),
+      description: z.string(),
+      durationInFrames: z.number().optional().default(150),
+    })
+  ),
+});
+
+const defaultCarouselSequence = [
+  { src: "video-assets/placeholder-image-1.jpg", title: "Amazing Product", description: "Discover the amazing features we just launched", durationInFrames: 150 },
+  { src: "video-assets/placeholder-image-2.jpg", title: "Super Fast", description: "Everything happens in blink of an eye", durationInFrames: 150 },
 ];
 
 export const RemotionRoot: React.FC = () => {
@@ -72,7 +90,7 @@ export const RemotionRoot: React.FC = () => {
         calculateMetadata={async ({ props }) => {
           const fps = 30;
           const sequence = props.videoSequence || defaultVideoSequence;
-          
+
           const durations = await Promise.all(
             sequence.map(async (v) => {
               const metadata = await getVideoMetadata(staticFile(v.src));
@@ -87,6 +105,35 @@ export const RemotionRoot: React.FC = () => {
             props: {
               ...props,
               segments: sequence.map((v, i) => ({
+                ...v,
+                durationInFrames: durations[i]
+              }))
+            },
+          };
+        }}
+      />
+
+      <Composition
+        id="Carousel"
+        component={CarouselComp}
+        fps={30}
+        width={1080}
+        height={1920}
+        schema={carouselSequenceSchema}
+        defaultProps={{
+          carouselSequence: defaultCarouselSequence,
+        }}
+        calculateMetadata={async ({ props }) => {
+          const sequence = props.carouselSequence || defaultCarouselSequence;
+          
+          const durations = sequence.map(v => v.durationInFrames || 150);
+          const totalDuration = durations.reduce((a, b) => a + b, 0) || 150;
+
+          return {
+            durationInFrames: totalDuration,
+            props: {
+              ...props,
+              carouselSequence: sequence.map((v, i) => ({
                 ...v,
                 durationInFrames: durations[i]
               }))

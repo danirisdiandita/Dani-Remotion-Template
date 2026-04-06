@@ -26,10 +26,11 @@ export function CreateProjectButton() {
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
     const description = formData.get("description") as string;
+    const compositionType = formData.get("compositionType") as string;
 
     if (!name) return;
 
-    create({ name, description }, {
+    create({ name, description, compositionType }, {
       onSuccess: () => setOpen(false)
     });
   }
@@ -58,6 +59,18 @@ export function CreateProjectButton() {
                 required 
                 autoFocus
               />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="compositionType">Output Type</Label>
+              <select
+                id="compositionType"
+                name="compositionType"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                defaultValue="video"
+              >
+                <option value="video">Standard Video (MP4)</option>
+                <option value="carousel">Photo Carousel (ZIP)</option>
+              </select>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="description">Description (Optional)</Label>
