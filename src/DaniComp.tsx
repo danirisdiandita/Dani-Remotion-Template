@@ -42,7 +42,7 @@ const VideoSegment: React.FC<{
         <div
           style={{
             textAlign: 'center',
-            fontSize: '92px',
+            fontSize: '75px',
             fontWeight: 800,
             fontFamily: '"Montserrat", "Inter", "Noto Color Emoji", sans-serif',
             lineHeight: 1.15,
