@@ -15,6 +15,10 @@ const VideoSegment: React.FC<{
             src: url('${staticFile("Montserrat-ExtraBold.ttf")}') format('truetype');
             font-weight: 800;
           }
+          @font-face {
+            font-family: 'Noto Color Emoji';
+            src: url('${staticFile("NotoColorEmoji-Regular.ttf")}') format('truetype');
+          }
         `}
       </style>
       <OffthreadVideo
@@ -40,7 +44,7 @@ const VideoSegment: React.FC<{
             textAlign: 'center',
             fontSize: '92px',
             fontWeight: 800,
-            fontFamily: '"Montserrat", "Inter", sans-serif',
+            fontFamily: '"Montserrat", "Inter", "Noto Color Emoji", sans-serif',
             lineHeight: 1.15,
             letterSpacing: '-1.5px',
             color: 'white',
