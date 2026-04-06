@@ -19,7 +19,6 @@ import {
   ChevronLeft,
   Trash2,
   RotateCcw,
-  CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -43,7 +42,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 
 type RenderRecord = {
   id: string;
@@ -316,7 +314,7 @@ export function RendersClient({ projectId, projectName, initialRenders }: Render
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((gen) => (
-            <Card key={gen.id} className="overflow-hidden relative group border bg-card text-card-foreground">
+            <Card key={gen.id} className="overflow-hidden relative group border bg-card text-card-foreground gap-y-2">
               <div className="absolute top-4 left-4 z-20">
                 <Checkbox
                   checked={checkedIds.has(gen.id)}
@@ -326,16 +324,6 @@ export function RendersClient({ projectId, projectName, initialRenders }: Render
               </div>
 
               <CardContent className="p-0">
-                <div className="aspect-video bg-muted/50 border-b flex items-center justify-center relative overflow-hidden">
-                  <Video className="h-10 w-10 text-muted-foreground/30 group-hover:scale-105 transition-transform" />
-                  <div className="absolute bottom-3 right-3">
-                    <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm text-xs font-semibold gap-1.5 shadow-sm">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-                      Completed
-                    </Badge>
-                  </div>
-                </div>
-
                 <div className="p-4 flex flex-col gap-4">
                   <div className="space-y-1.5 pr-2">
                     <h3

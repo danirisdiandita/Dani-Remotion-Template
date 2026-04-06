@@ -180,15 +180,15 @@ export function ProjectCard({ project }: ProjectCardProps) {
           </AlertDialog>
 
           <Link href={`/dashboard/projects/${project.id}/renders`}>
-            <Button variant="outline" size="sm" className="hidden sm:flex border-blue-500/20 bg-blue-500/5 text-blue-600 hover:bg-blue-500/10 hover:text-blue-700">
-              Rendered
+            <Button variant="outline" size="sm" className="flex border-1 border-gray-200 bg-blue-500/5 text-blue-600 hover:bg-blue-500/10 hover:text-blue-700">
+              <span className="hidden sm:flex">Rendered</span>
               <Download className="ml-2 size-3" />
             </Button>
           </Link>
 
           <Link href={`/dashboard/projects/${project.id}`}>
-            <Button variant="outline" size="sm" className="hidden sm:flex border-border/80">
-              Config
+            <Button variant="outline" size="sm" className="flex border-1 border-gray-200">
+              <span className="hidden sm:flex">Config</span>
               <Settings className="ml-2 size-3" />
             </Button>
           </Link>
