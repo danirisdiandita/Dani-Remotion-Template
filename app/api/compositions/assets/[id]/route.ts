@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { deleteFromS3 } from "@/lib/s3-utils";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth.api.getSession({
@@ -39,9 +40,24 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
   try {
     const { id } = await params;
+    
+    const compAsset = await prisma.compositionAsset.findUnique({
+      where: { id },
+      include: { asset: true }
+    });
+
+    if (!compAsset) {
+      return NextResponse.json({ error: "Asset not found" }, { status: 404 });
+    }
+
     await prisma.compositionAsset.delete({
       where: { id },
     });
+
+    if (compAsset.asset?.s3Key) {
+      await deleteFromS3(compAsset.asset.s3Key).catch(console.error);
+      await prisma.asset.delete({ where: { id: compAsset.assetId } }).catch(console.error);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

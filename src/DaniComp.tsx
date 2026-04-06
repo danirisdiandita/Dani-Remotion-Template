@@ -36,7 +36,7 @@ const VideoSegment: React.FC<{
           justifyContent: 'flex-end',
           alignItems: 'center',
           padding: '0 40px',
-          paddingBottom: '360px',
+          paddingBottom: '493px',
         }}
       >
         <div

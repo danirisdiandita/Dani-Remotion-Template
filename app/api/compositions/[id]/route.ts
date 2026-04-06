@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { syncCompositionOrders } from "@/lib/compositions";
+import { deleteMultipleFromS3 } from "@/lib/s3-utils";
 
 async function getCompositionWithProject(id: string, userId: string) {
     return await prisma.composition.findFirst({
@@ -69,9 +70,26 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
         return NextResponse.json({ error: "Composition not found" }, { status: 404 });
     }
 
+    const compAssets = await prisma.compositionAsset.findMany({
+      where: { compositionId: id },
+      include: { asset: true }
+    });
+
     await prisma.composition.delete({
       where: { id },
     });
+
+    const s3Keys = compAssets.map(ca => ca.asset.s3Key).filter(Boolean);
+    if (s3Keys.length > 0) {
+      await deleteMultipleFromS3(s3Keys).catch(console.error);
+    }
+
+    const assetIds = compAssets.map(ca => ca.assetId);
+    if (assetIds.length > 0) {
+      await prisma.asset.deleteMany({
+        where: { id: { in: assetIds } }
+      }).catch(console.error);
+    }
 
     // 🔄 Sync all orders to ensure no gaps (e.g. 1, 2, 3...) after deletion
     await syncCompositionOrders(composition.projectId);
