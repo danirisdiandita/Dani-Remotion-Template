@@ -22,6 +22,12 @@ const fontFaceStyles = `
     font-weight: 800;
   }
   @font-face {
+    font-family: 'Playfair Display';
+    src: url('${staticFile("PlayfairDisplay-BoldItalic.ttf")}') format('truetype');
+    font-weight: 700;
+    font-style: italic;
+  }
+  @font-face {
     font-family: 'Noto Color Emoji';
     src: url('${staticFile("NotoColorEmoji-Regular.ttf")}') format('truetype');
   }
@@ -31,11 +37,11 @@ const fontFamily = '"Montserrat", "Inter", "Noto Color Emoji", sans-serif';
 
 // ─── Plaid Background ────────────────────────────────────────────────────────
 
-const SlideBackground: React.FC<{ image?: string }> = ({ image }) => {
+const SlideBackground: React.FC<{ image?: string; darken?: boolean }> = ({ image, darken = true }) => {
   if (image) {
     const imgSrc = image.startsWith('http') || image.startsWith('data:') ? image : staticFile(image);
     return (
-      <>
+      <AbsoluteFill>
         <Img
           src={imgSrc}
           style={{
@@ -46,14 +52,17 @@ const SlideBackground: React.FC<{ image?: string }> = ({ image }) => {
             objectFit: 'cover',
           }}
         />
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.15)',
-          }}
-        />
-      </>
+        {/* Dark overlay for contrast */}
+        {darken && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.45)',
+            }}
+          />
+        )}
+      </AbsoluteFill>
     );
   }
 
@@ -63,28 +72,29 @@ const SlideBackground: React.FC<{ image?: string }> = ({ image }) => {
         position: 'absolute',
         inset: 0,
         background: `
+          ${darken ? 'linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)),' : ''}
           repeating-linear-gradient(
-          0deg,
-          transparent,
-          transparent 48px,
-          rgba(92, 61, 46, 0.15) 48px,
-          rgba(92, 61, 46, 0.15) 50px,
-          transparent 50px,
-          transparent 98px,
-          rgba(92, 61, 46, 0.08) 98px,
-          rgba(92, 61, 46, 0.08) 100px
-        ),
-        repeating-linear-gradient(
-          90deg,
-          transparent,
-          transparent 48px,
-          rgba(92, 61, 46, 0.15) 48px,
-          rgba(92, 61, 46, 0.15) 50px,
-          transparent 50px,
-          transparent 98px,
-          rgba(92, 61, 46, 0.08) 98px,
-          rgba(92, 61, 46, 0.08) 100px
-        ),
+            0deg,
+            transparent,
+            transparent 48px,
+            rgba(92, 61, 46, 0.15) 48px,
+            rgba(92, 61, 46, 0.15) 50px,
+            transparent 50px,
+            transparent 98px,
+            rgba(92, 61, 46, 0.08) 98px,
+            rgba(92, 61, 46, 0.08) 100px
+          ),
+          repeating-linear-gradient(
+            90deg,
+            transparent,
+            transparent 48px,
+            rgba(92, 61, 46, 0.15) 48px,
+            rgba(92, 61, 46, 0.15) 50px,
+            transparent 50px,
+            transparent 98px,
+            rgba(92, 61, 46, 0.08) 98px,
+            rgba(92, 61, 46, 0.08) 100px
+          ),
           linear-gradient(135deg, #C4A882 0%, #B08D6A 30%, #A07B5A 60%, #8B6B4A 100%)
         `,
       }}
@@ -152,17 +162,18 @@ const TitleSlide: React.FC<{
         padding: '100px',
       }}
     >
-
-      {/* Title (Now simple text) */}
+      {/* Title */}
       <h1
         style={{
-          fontFamily,
-          fontSize: 82,
-          fontWeight: 800,
-          color: COLORS.brownDark,
+          fontFamily: '"Playfair Display", serif',
+          fontSize: 112,
+          fontWeight: 700,
+          fontStyle: 'italic',
+          color: COLORS.white,
+          textShadow: '0 2px 10px rgba(0,0,0,0.1)',
           margin: '0 0 60px 0',
           textAlign: 'center',
-          lineHeight: 1.2,
+          lineHeight: 1.1,
         }}
       >
         {title}
@@ -171,7 +182,7 @@ const TitleSlide: React.FC<{
       <div
         style={{
           backgroundColor: COLORS.brownDark,
-          padding: '24px 56px',
+          padding: '12px 24px',
           borderRadius: 12,
           maxWidth: 900,
         }}
@@ -233,9 +244,10 @@ const TipsSlide: React.FC<{
       >
         <h2
           style={{
-            fontFamily,
-            fontSize: 56,
-            fontWeight: 800,
+            fontFamily: '"Playfair Display", serif',
+            fontSize: 64,
+            fontWeight: 700,
+            fontStyle: 'italic',
             color: COLORS.cream,
             margin: 0,
           }}
@@ -288,22 +300,19 @@ const TipsSlide: React.FC<{
 const CtaSlide: React.FC<{ handle: string; backgroundImage?: string }> = ({ handle, backgroundImage }) => (
   <AbsoluteFill>
     <style>{fontFaceStyles}</style>
-    <SlideBackground image={backgroundImage} />
+    <SlideBackground image={backgroundImage} darken={false} />
     <div
       style={{
         position: 'absolute',
-        top: 100,
-        left: 60,
-        right: 60,
-        bottom: 140,
-        backgroundColor: COLORS.white,
-        borderRadius: 24,
-        padding: '80px 70px',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        boxShadow: '0 8px 40px rgba(0,0,0,0.12)',
+        padding: '100px',
       }}
     >
       <p
@@ -311,7 +320,14 @@ const CtaSlide: React.FC<{ handle: string; backgroundImage?: string }> = ({ hand
           fontFamily,
           fontSize: 56,
           fontWeight: 700,
-          color: COLORS.textMuted,
+          color: COLORS.white,
+          textShadow: `
+            -2px -2px 0 #000,  
+             2px -2px 0 #000,
+            -2px  2px 0 #000,
+             2px  2px 0 #000,
+             0 4px 15px rgba(0,0,0,0.6)
+          `,
           margin: '0 0 40px 0',
           textAlign: 'center',
         }}
@@ -327,29 +343,19 @@ const CtaSlide: React.FC<{ handle: string; backgroundImage?: string }> = ({ hand
       >
         <h2
           style={{
-            fontFamily,
-            fontSize: 80,
-            fontWeight: 800,
+            fontFamily: '"Playfair Display", serif',
+            fontSize: 100,
+            fontWeight: 700,
+            fontStyle: 'italic',
             color: COLORS.cream,
             margin: 0,
             textAlign: 'center',
+            lineHeight: 1.1,
           }}
         >
           NoteSpark AI
         </h2>
       </div>
-      <p
-        style={{
-          fontFamily,
-          fontSize: 40,
-          fontWeight: 600,
-          color: COLORS.accent,
-          margin: '50px 0 0 0',
-          textAlign: 'center',
-        }}
-      >
-        ✨ Your AI Study Companion ✨
-      </p>
     </div>
     <Watermark handle={handle} />
   </AbsoluteFill>
@@ -386,17 +392,17 @@ export const NicStudyComp: React.FC<{
   tipsImage,
   ctaImage,
 }) => {
-  return (
-    <Series>
-      <Series.Sequence durationInFrames={durationPerSlide}>
-        <TitleSlide title={title} description={description} handle={handle} backgroundImage={titleImage} />
-      </Series.Sequence>
-      <Series.Sequence durationInFrames={durationPerSlide}>
-        <TipsSlide tipsTitle={tipsTitle} tips={tips} handle={handle} backgroundImage={tipsImage} />
-      </Series.Sequence>
-      <Series.Sequence durationInFrames={durationPerSlide}>
-        <CtaSlide handle={handle} backgroundImage={ctaImage} />
-      </Series.Sequence>
-    </Series>
-  );
-};
+    return (
+      <Series>
+        <Series.Sequence durationInFrames={durationPerSlide}>
+          <TitleSlide title={title} description={description} handle={handle} backgroundImage={titleImage} />
+        </Series.Sequence>
+        <Series.Sequence durationInFrames={durationPerSlide}>
+          <TipsSlide tipsTitle={tipsTitle} tips={tips} handle={handle} backgroundImage={tipsImage} />
+        </Series.Sequence>
+        <Series.Sequence durationInFrames={durationPerSlide}>
+          <CtaSlide handle={handle} backgroundImage={ctaImage} />
+        </Series.Sequence>
+      </Series>
+    );
+  };

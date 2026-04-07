@@ -102,6 +102,25 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     if (savedCount !== null) setRenderCount(parseInt(savedCount) || 1);
   }, [projectId]);
 
+  // Sync server data to local state (both standard compositions and nicstudy props)
+  useEffect(() => {
+    if (project?.compositions) {
+      setLocalComps([...project.compositions].sort((a, b) => a.order - b.order));
+    }
+
+    if (isNicstudy && project?.description) {
+      try {
+        const parsed = JSON.parse(project.description);
+        // Only override if it looks like NicStudyProps
+        if (parsed.title || parsed.handle || parsed.tips) {
+          setNicstudyProps(parsed);
+        }
+      } catch (err) {
+        console.log("Failed to parse nicstudy props from description:", err);
+      }
+    }
+  }, [project?.compositions, project?.description, isNicstudy]);
+
   useEffect(() => {
     localStorage.setItem(`v-async-${projectId}`, String(isAsync));
   }, [isAsync, projectId]);
@@ -109,13 +128,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   useEffect(() => {
     localStorage.setItem(`v-count-${projectId}`, String(renderCount));
   }, [renderCount, projectId]);
-
-  // Sync server data to local state for smooth DnD
-  useEffect(() => {
-    if (project?.compositions) {
-      setLocalComps([...project.compositions].sort((a, b) => a.order - b.order));
-    }
-  }, [project?.compositions]);
 
   const { mutate: updateProject, isPending: isUpdatingProject } = useUpdateProject();
   const { mutate: create, isPending: isCreating } = useCreateComposition(projectId);
@@ -425,7 +437,15 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             <NicStudyEditor
               projectId={projectId}
               value={nicstudyProps}
-              onPropsChange={setNicstudyProps}
+              onPropsChange={(newProps) => {
+                setNicstudyProps(newProps);
+                // Auto-persist nicely
+                updateProject({
+                  id: projectId,
+                  name: project.name,
+                  description: JSON.stringify(newProps)
+                });
+              }}
             />
           </div>
         </div>
