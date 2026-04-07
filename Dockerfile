@@ -47,7 +47,8 @@ RUN apt install -y \
   libpango-1.0-0 \
   libcairo2 \
   libcups2 \
-  chromium
+  chromium \
+  zip
 
 # Set Chrome path for Puppeteer (Remotion often detects this or needs it)
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
