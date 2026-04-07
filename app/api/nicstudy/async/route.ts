@@ -14,30 +14,30 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { projectId, compositionType, ...props } = await req.json();
+    const body = await req.json();
+    const { projectId } = body;
 
     if (!projectId) {
       return NextResponse.json({ error: "Missing projectId" }, { status: 400 });
     }
 
-    let targetUrl = ENV.gcp.endpointUrl;
-    if (compositionType === "nicstudy") {
-      targetUrl = targetUrl?.replace("/api/render", "/api/nicstudy");
-    } else if (compositionType === "carousel") {
-      targetUrl = targetUrl?.replace("/api/render", "/api/carousel");
-    }
+    // Determine target URL for the actual rendering logic
+    const targetUrl = ENV.gcp.endpointUrl?.replace("/api/render", "/api/nicstudy");
 
-    // Creating the task to be processed asynchronously
+    // Create the Cloud Task to process rendering in the background
     await createTaskAPI({
-      body: JSON.stringify({ projectId, compositionType, ...props }),
+      body: JSON.stringify({ ...body, compositionType: "nicstudy" }),
       url: targetUrl
     });
 
-    return NextResponse.json({ success: true, message: "Rendering task queued successfully" });
+    return NextResponse.json({ 
+      success: true, 
+      message: "NicStudy carousel rendering task queued successfully" 
+    });
   } catch (error: any) {
-    console.error("Async Render Queue Error:", error);
+    console.error("NicStudy Async Error:", error);
     return NextResponse.json(
-      { error: "Failed to queue render task", details: error.message },
+      { error: "Failed to queue nicstudy task", details: error.message },
       { status: 500 }
     );
   }
