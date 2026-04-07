@@ -70,6 +70,7 @@ export function CreateProjectButton() {
               >
                 <option value="video">Standard Video (MP4)</option>
                 <option value="carousel">Photo Carousel (ZIP)</option>
+                <option value="nicstudy">NicStudy Carousel (ZIP)</option>
               </select>
             </div>
             <div className="grid gap-2">

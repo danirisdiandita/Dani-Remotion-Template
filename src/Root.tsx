@@ -5,6 +5,7 @@ import { HelloWorld, myCompSchema } from "./HelloWorld";
 import { Logo, myCompSchema2 } from "./HelloWorld/Logo";
 import { DaniComp } from "./DaniComp";
 import { CarouselComp } from "./CarouselComp";
+import { NicStudyComp } from "./NicStudyComp";
 
 // 1. Define the schema for the video sequence
 export const videoSequenceSchema = z.object({
@@ -43,6 +44,27 @@ const defaultCarouselSequence = [
   { src: "video-assets/placeholder-image-1.jpg", title: "Amazing Product", description: "Discover the amazing features we just launched", durationInFrames: 150 },
   { src: "video-assets/placeholder-image-2.jpg", title: "Super Fast", description: "Everything happens in blink of an eye", durationInFrames: 150 },
 ];
+
+// 4. Define schema for nicstudy
+export const nicstudySchema = z.object({
+  title: z.string().default('Hari 1: Penalaran Umum (PU)'),
+  description: z.string().default('Fokus: Mengolah informasi secara logis, kritis, dan kuantitatif.'),
+  tipsTitle: z.string().default('Materi Wajib'),
+  tips: z.array(z.string()).default([
+    'Logika (Ponens, Tollens, dan Silogisme)',
+    'Memperkuat dan Memperlemah Pernyataan',
+    'Pernyataan Pasti Benar dan Mungkin Benar',
+    'Perbandingan',
+    'Pola Bilangan',
+    'Analisis Grafik/Tabel',
+    'Logika Analitik',
+  ]),
+  handle: z.string().default('@nicstudy.id'),
+  durationPerSlide: z.number().default(150),
+  titleImage: z.string().optional(),
+  tipsImage: z.string().optional(),
+  ctaImage: z.string().optional(),
+});
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -138,6 +160,40 @@ export const RemotionRoot: React.FC = () => {
                 durationInFrames: durations[i]
               }))
             },
+          };
+        }}
+      />
+
+      <Composition
+        id="nicstudy"
+        component={NicStudyComp}
+        fps={30}
+        width={1080}
+        height={1910}
+        schema={nicstudySchema}
+        defaultProps={{
+          title: 'Hari 1: Penalaran Umum (PU)',
+          description: 'Fokus: Mengolah informasi secara logis, kritis, dan kuantitatif.',
+          tipsTitle: 'Materi Wajib',
+          tips: [
+            'Logika (Ponens, Tollens, dan Silogisme)',
+            'Memperkuat dan Memperlemah Pernyataan',
+            'Pernyataan Pasti Benar dan Mungkin Benar',
+            'Perbandingan',
+            'Pola Bilangan',
+            'Analisis Grafik/Tabel',
+            'Logika Analitik',
+          ],
+          handle: '@nicstudy.id',
+          durationPerSlide: 150,
+          titleImage: undefined,
+          tipsImage: undefined,
+          ctaImage: undefined,
+        }}
+        calculateMetadata={async ({ props }) => {
+          const perSlide = props.durationPerSlide || 150;
+          return {
+            durationInFrames: perSlide * 3,
           };
         }}
       />

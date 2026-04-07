@@ -19,6 +19,7 @@ import {
   ChevronLeft,
   Trash2,
   RotateCcw,
+  Image as ImageIcon
 } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -61,9 +62,9 @@ interface RendersClientProps {
 }
 
 export function RendersClient({ projectId, projectName, compositionType, initialRenders }: RendersClientProps) {
-
-  console.log('compositionType', compositionType)
-  const isCarousel = compositionType === "carousel";
+  const isZip = compositionType === "carousel" || compositionType === "nicstudy";
+  const label = isZip ? "File" : "Video";
+  const labelPlural = isZip ? "Files" : "Videos";
 
   const router = useRouter();
 
@@ -91,7 +92,6 @@ export function RendersClient({ projectId, projectName, compositionType, initial
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
-  // Hydrate checkbox selections directly from the Database flag
   useEffect(() => {
     const next = new Set<string>();
     parsedRenders.forEach(r => {
@@ -107,7 +107,6 @@ export function RendersClient({ projectId, projectName, compositionType, initial
   };
 
   const handleToggleCheck = async (id: string, isChecked: boolean) => {
-    // Optimistic UI Update
     setCheckedIds(prev => {
       const next = new Set(prev);
       if (isChecked) next.add(id);
@@ -116,7 +115,6 @@ export function RendersClient({ projectId, projectName, compositionType, initial
     });
 
     try {
-      // Sync strictly to backend
       const res = await fetch(`/api/renders/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -126,7 +124,6 @@ export function RendersClient({ projectId, projectName, compositionType, initial
       router.refresh();
     } catch (err: any) {
       toast.error(err.message || "Failed to update checklisted status");
-      // Revert optimistic update on failure
       setCheckedIds(prev => {
         const next = new Set(prev);
         if (!isChecked) next.add(id);
@@ -139,17 +136,14 @@ export function RendersClient({ projectId, projectName, compositionType, initial
   const handleBulkDelete = async () => {
     if (checkedIds.size === 0) return;
     setIsDeletingBulk(true);
-
     try {
       const res = await fetch("/api/renders/bulk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: Array.from(checkedIds) })
       });
-
       if (!res.ok) throw new Error("Failed to bulk delete");
-
-      toast.success(`Deleted ${checkedIds.size} ${isCarousel ? 'files' : 'videos'}.`);
+      toast.success(`Deleted ${checkedIds.size} ${labelPlural.toLowerCase()}.`);
       setCheckedIds(new Set());
       router.refresh();
     } catch (err: any) {
@@ -162,9 +156,8 @@ export function RendersClient({ projectId, projectName, compositionType, initial
   const handleDeleteIndividual = async (id: string) => {
     try {
       const res = await fetch(`/api/renders/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error(`Failed to delete ${isCarousel ? 'file' : 'video'}`);
-
-      toast.success(`${isCarousel ? 'File' : 'Video'} deleted.`);
+      if (!res.ok) throw new Error(`Failed to delete ${label.toLowerCase()}`);
+      toast.success(`${label} deleted.`);
       setCheckedIds(prev => {
         const next = new Set(prev);
         next.delete(id);
@@ -196,22 +189,20 @@ export function RendersClient({ projectId, projectName, compositionType, initial
       toast.error("Asset unavailable");
       return;
     }
-
     setSharingId(video.id);
     setShareDialogOpen(true);
     setShareDialogLoading(true);
     setShareFile(null);
     setSelectedVideo(video);
-
     try {
       const response = await fetch(video.downloadUrl);
       const blob = await response.blob();
-      const ext = isCarousel ? 'zip' : 'mp4';
-      const mime = isCarousel ? 'application/zip' : 'video/mp4';
+      const ext = isZip ? 'zip' : 'mp4';
+      const mime = isZip ? 'application/zip' : 'video/mp4';
       const file = new File([blob], `render-${video.id.slice(0, 8)}.${ext}`, { type: mime });
       setShareFile(file);
     } catch (err: any) {
-      toast.error(`Failed to load ${isCarousel ? 'file' : 'video'} for sharing`);
+      toast.error(`Failed to load ${label.toLowerCase()} for sharing`);
       setShareDialogOpen(false);
     } finally {
       setShareDialogLoading(false);
@@ -221,13 +212,12 @@ export function RendersClient({ projectId, projectName, compositionType, initial
 
   const handleShareConfirm = async () => {
     if (!shareFile || !selectedVideo) return;
-
     try {
       if (navigator.canShare && navigator.canShare({ files: [shareFile] })) {
         await navigator.share({
           files: [shareFile],
-          title: `${isCarousel ? 'Photos' : 'Video'} from ${projectName}`,
-          text: selectedVideo.caption || `Check out ${isCarousel ? 'these photos' : 'this video'}!`
+          title: `${isZip ? 'Photos' : 'Video'} from ${projectName}`,
+          text: selectedVideo.caption || `Check out ${isZip ? 'these photos' : 'this video'}!`
         });
         toast.success("Shared successfully");
         setShareDialogOpen(false);
@@ -248,7 +238,6 @@ export function RendersClient({ projectId, projectName, compositionType, initial
 
   return (
     <div className="flex-1 space-y-6 lg:p-6 p-4">
-
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-2">
           <Link href={`/dashboard/projects/${projectId}`}>
@@ -261,9 +250,9 @@ export function RendersClient({ projectId, projectName, compositionType, initial
 
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div className="space-y-1">
-            <h1 className="text-2xl font-bold tracking-tight">{isCarousel ? 'Exported Photos' : 'Exported Videos'}</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Exported {labelPlural}</h1>
             <p className="text-sm text-muted-foreground">
-              View and manage all generated {isCarousel ? 'photo carousels' : 'videos'} for {projectName}.
+              View and manage all generated {labelPlural.toLowerCase()} for {projectName}.
             </p>
           </div>
 
@@ -305,13 +294,12 @@ export function RendersClient({ projectId, projectName, compositionType, initial
       {parsedRenders.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-12 lg:p-24 border-2 border-dashed rounded-lg bg-muted/20 text-center space-y-4">
           <div className="p-4 bg-primary/10 rounded-full">
-            <Video className="h-6 w-6 text-primary" />
+            {isZip ? <ImageIcon className="h-6 w-6 text-primary" /> : <Video className="h-6 w-6 text-primary" />}
           </div>
-          <h3 className="text-lg font-semibold tracking-tight">{isCarousel ? 'No photos exported yet' : 'No videos exported yet'}</h3>
+          <h3 className="text-lg font-semibold tracking-tight">No {labelPlural.toLowerCase()} exported yet</h3>
           <p className="text-muted-foreground text-sm max-w-sm">
-            {isCarousel ? 'Photos' : 'Videos'} rendered from the sequence editor will appear securely here.
+            {labelPlural} rendered from the sequence editor will appear securely here.
           </p>
-
           <Link href={`/dashboard/projects/${projectId}`}>
             <Button className="mt-4">
               Go to sequence editor
@@ -329,7 +317,6 @@ export function RendersClient({ projectId, projectName, compositionType, initial
                   className="bg-background shadow-md border-muted-foreground"
                 />
               </div>
-
               <CardContent className="p-0">
                 <div className="p-4 flex flex-col gap-4">
                   <div className="space-y-1.5 pr-2">
@@ -346,7 +333,6 @@ export function RendersClient({ projectId, projectName, compositionType, initial
                       ID: {gen.id.slice(0, 6)}
                     </div>
                   </div>
-
                   <div className="flex items-center gap-2">
                     {gen.downloadUrl ? (
                       <a href={gen.downloadUrl} download className="flex-1">
@@ -360,7 +346,6 @@ export function RendersClient({ projectId, projectName, compositionType, initial
                         <span>Unavailable</span>
                       </Button>
                     )}
-
                     <Button
                       variant="secondary"
                       size="sm"
@@ -370,7 +355,6 @@ export function RendersClient({ projectId, projectName, compositionType, initial
                     >
                       {sharingId === gen.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share className="h-4 w-4" />}
                     </Button>
-
                     <Button
                       variant="outline"
                       size="sm"
@@ -379,7 +363,6 @@ export function RendersClient({ projectId, projectName, compositionType, initial
                     >
                       {copiedId === gen.id ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
                     </Button>
-
                     <Button
                       variant="ghost"
                       size="sm"
@@ -405,7 +388,7 @@ export function RendersClient({ projectId, projectName, compositionType, initial
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete this exported {isCarousel ? 'zip' : 'video'} file from our Amazon S3 storage bucket and permanently wipe the configuration record from the database.
+              This action cannot be undone. This will permanently delete this exported {label.toLowerCase()} file from our Amazon S3 storage bucket and permanently wipe the configuration record from the database.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -425,10 +408,9 @@ export function RendersClient({ projectId, projectName, compositionType, initial
           <DialogHeader>
             <DialogTitle>Share External</DialogTitle>
             <DialogDescription>
-              {shareDialogLoading ? "Preparing high-quality file..." : `Your ${isCarousel ? 'file' : 'video'} is ready to share.`}
+              {shareDialogLoading ? "Preparing high-quality file..." : `Your ${label.toLowerCase()} is ready to share.`}
             </DialogDescription>
           </DialogHeader>
-
           <div className="py-6 flex flex-col items-center justify-center min-h-[120px] bg-muted/30 rounded-lg border border-dashed my-4">
             {shareDialogLoading ? (
               <div className="flex flex-col items-center gap-3">
@@ -440,24 +422,16 @@ export function RendersClient({ projectId, projectName, compositionType, initial
                 <div className="p-3 bg-green-500/10 rounded-full">
                   <Check className="h-6 w-6 text-green-500" />
                 </div>
-                <p className="text-sm font-medium">{isCarousel ? 'File Ready' : 'Video Ready'}</p>
+                <p className="text-sm font-medium">{label} Ready</p>
                 <p className="text-xs text-muted-foreground max-w-full px-4 truncate">{shareFile?.name}</p>
               </div>
             )}
           </div>
-
           <div className="flex gap-2 justify-end mt-2">
-            <Button
-              variant="ghost"
-              onClick={() => setShareDialogOpen(false)}
-              disabled={shareDialogLoading}
-            >
+            <Button variant="ghost" onClick={() => setShareDialogOpen(false)} disabled={shareDialogLoading}>
               Cancel
             </Button>
-            <Button
-              onClick={handleShareConfirm}
-              disabled={shareDialogLoading || !shareFile}
-            >
+            <Button onClick={handleShareConfirm} disabled={shareDialogLoading || !shareFile}>
               Share Now
             </Button>
           </div>

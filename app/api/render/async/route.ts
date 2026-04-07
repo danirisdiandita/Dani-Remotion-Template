@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { createTaskAPI } from "@/lib/cloud-task";
+import { ENV } from "@/config/constant";
 
 export async function POST(req: Request) {
   const session = await auth.api.getSession({
@@ -13,16 +14,23 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { projectId } = await req.json();
+    const { projectId, compositionType, ...props } = await req.json();
 
     if (!projectId) {
       return NextResponse.json({ error: "Missing projectId" }, { status: 400 });
     }
 
+    let targetUrl = ENV.gcp.endpointUrl;
+    if (compositionType === "nicstudy") {
+      targetUrl = targetUrl?.replace("/api/render", "/api/nicstudy");
+    } else if (compositionType === "carousel") {
+      targetUrl = targetUrl?.replace("/api/render", "/api/carousel");
+    }
+
     // Creating the task to be processed asynchronously
-    // This calls the internal render endpoint (via Cloud Run / Task URL)
     await createTaskAPI({
-      body: JSON.stringify({ projectId }),
+      body: JSON.stringify({ projectId, compositionType, ...props }),
+      url: targetUrl
     });
 
     return NextResponse.json({ success: true, message: "Rendering task queued successfully" });

@@ -30,14 +30,16 @@ export default async function ProjectRendersPage({ params }: { params: Promise<{
   });
 
   const isCarousel = (project as any).compositionType === "carousel";
+  const isNicstudy = (project as any).compositionType === "nicstudy";
+  const isZip = isCarousel || isNicstudy;
 
   // Generate ultra-secure AWS presigned URLs directly in the server component for instant click-to-download
   const renderList = await Promise.all(renders.map(async (r) => {
     let downloadUrl = "";
     if (r.s3Key) {
       // Request browser attachment header so clicking triggers file download natively
-      const mimeType = isCarousel ? "application/zip" : "video/mp4";
-      const extension = isCarousel ? "zip" : "mp4";
+      const mimeType = isZip ? "application/zip" : "video/mp4";
+      const extension = isZip ? "zip" : "mp4";
       downloadUrl = await getPresignedDownloadUrl(r.s3Key, mimeType, `attachment; filename="Sequence-Action-${r.id.slice(-4)}.${extension}"`);
     }
     return { ...r, downloadUrl };
