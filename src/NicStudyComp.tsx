@@ -141,58 +141,55 @@ const TitleSlide: React.FC<{
     <div
       style={{
         position: 'absolute',
-        top: 100,
-        left: 60,
-        right: 60,
-        bottom: 140,
-        backgroundColor: COLORS.white,
-        borderRadius: 24,
-        padding: '80px 70px',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        boxShadow: '0 8px 40px rgba(0,0,0,0.12)',
+        padding: '100px',
       }}
     >
-      {/* Title with brown highlight */}
+
+      {/* Title (Now simple text) */}
+      <h1
+        style={{
+          fontFamily,
+          fontSize: 82,
+          fontWeight: 800,
+          color: COLORS.brownDark,
+          margin: '0 0 60px 0',
+          textAlign: 'center',
+          lineHeight: 1.2,
+        }}
+      >
+        {title}
+      </h1>
+      {/* Description with brown highlight */}
       <div
         style={{
           backgroundColor: COLORS.brownDark,
-          padding: '20px 50px',
-          borderRadius: 8,
-          marginBottom: 60,
+          padding: '24px 56px',
+          borderRadius: 12,
+          maxWidth: 900,
         }}
       >
-        <h1
+        <p
           style={{
             fontFamily,
-            fontSize: 72,
-            fontWeight: 800,
+            fontSize: 48,
+            fontWeight: 700,
             color: COLORS.cream,
-            margin: 0,
             textAlign: 'center',
-            lineHeight: 1.2,
+            lineHeight: 1.5,
+            margin: 0,
           }}
         >
-          {title}
-        </h1>
+          {description}
+        </p>
       </div>
-      {/* Description */}
-      <p
-        style={{
-          fontFamily,
-          fontSize: 48,
-          fontWeight: 700,
-          color: COLORS.textDark,
-          textAlign: 'center',
-          lineHeight: 1.5,
-          margin: 0,
-          maxWidth: 800,
-        }}
-      >
-        {description}
-      </p>
     </div>
     <Watermark handle={handle} />
   </AbsoluteFill>
