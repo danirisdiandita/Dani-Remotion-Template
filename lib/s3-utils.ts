@@ -156,6 +156,25 @@ export const downloadFromS3 = async (s3Key: string, localPath: string) => {
     return localPath;
 };
 
+export const downloadToBuffer = async (s3Key: string): Promise<Buffer> => {
+    const bucketName = ENV.s3.bucket;
+    const command = new GetObjectCommand({
+        Bucket: bucketName,
+        Key: s3Key,
+    });
+
+    const response = await s3Client.send(command);
+    
+    if (!response.Body) {
+        throw new Error('Empty response body');
+    }
+
+    // transformToByteArray is available on the stream returned by the SDK in many environments
+    // or we can use the helper if it's not.
+    const byteArray = await response.Body.transformToByteArray();
+    return Buffer.from(byteArray);
+};
+
 /**
  * Uploads a local file to S3.
  */

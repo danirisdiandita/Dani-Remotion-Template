@@ -1,7 +1,64 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { deleteMultipleFromS3 } from "@/lib/s3-utils";
+import { deleteMultipleFromS3, downloadToBuffer } from "@/lib/s3-utils";
+import AdmZip from "adm-zip";
+import { NextResponse } from "next/server";
+
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers()
+    });
+
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+
+    const render = await prisma.render.findFirst({
+      where: {
+        id,
+        userId: session.user.id
+      }
+    });
+
+    if (!render || !render.s3Key) {
+      return NextResponse.json({ error: "Render artifact not found or unauthorized" }, { status: 404 });
+    }
+
+    // Only process ZIP files for this special sharing logic
+    const isZip = render.s3Key.toLowerCase().endsWith('.zip');
+    if (!isZip) {
+        return NextResponse.json({ error: "Not a ZIP file" }, { status: 400 });
+    }
+
+    const zipBuffer = await downloadToBuffer(render.s3Key);
+    const zip = new AdmZip(zipBuffer);
+    const zipEntries = zip.getEntries();
+
+    const sortedFiles = zipEntries
+      .filter((entry) => !entry.isDirectory && entry.entryName.match(/\.(jpg|jpeg|png|gif|webp)$/i))
+      .sort((a, b) => a.entryName.localeCompare(b.entryName, undefined, { numeric: true, sensitivity: 'base' }))
+      .map((entry) => {
+        return {
+          name: entry.entryName,
+          content: entry.getData().toString("base64"),
+          type: (() => {
+            const ext = entry.entryName.split('.').pop()?.toLowerCase() || 'jpeg';
+            if (ext === 'jpg') return 'image/jpeg';
+            return `image/${ext}`;
+          })(),
+        };
+      });
+
+    return NextResponse.json({ files: sortedFiles });
+  } catch (error) {
+    console.error("❌ Error processing zip file:", error);
+    return NextResponse.json({ error: "Failed to process file" }, { status: 500 });
+  }
+}
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {

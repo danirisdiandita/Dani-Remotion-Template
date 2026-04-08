@@ -82,7 +82,7 @@ export function RendersClient({ projectId, projectName, compositionType, initial
 
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareDialogLoading, setShareDialogLoading] = useState(false);
-  const [shareFile, setShareFile] = useState<File | null>(null);
+  const [shareFiles, setShareFiles] = useState<File[] | null>(null);
   const [sharingId, setSharingId] = useState<string | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<RenderRecord | null>(null);
 
@@ -192,15 +192,38 @@ export function RendersClient({ projectId, projectName, compositionType, initial
     setSharingId(video.id);
     setShareDialogOpen(true);
     setShareDialogLoading(true);
-    setShareFile(null);
+    setShareFiles(null);
     setSelectedVideo(video);
     try {
-      const response = await fetch(video.downloadUrl);
-      const blob = await response.blob();
-      const ext = isZip ? 'zip' : 'mp4';
-      const mime = isZip ? 'application/zip' : 'video/mp4';
-      const file = new File([blob], `render-${video.id.slice(0, 8)}.${ext}`, { type: mime });
-      setShareFile(file);
+      if (isZip) {
+        const response = await fetch(`/api/renders/${video.id}`);
+        if (!response.ok) throw new Error("Failed to extract files");
+        const data = await response.json();
+        
+        if (!data.files || data.files.length === 0) {
+          toast.error("No files found in archive");
+          setShareDialogOpen(false);
+          return;
+        }
+
+        const filesArray = data.files.map((file: any) => {
+          const byteCharacters = atob(file.content);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: file.type });
+
+          return new File([blob], file.name, { type: file.type });
+        });
+        setShareFiles(filesArray);
+      } else {
+        const response = await fetch(video.downloadUrl);
+        const blob = await response.blob();
+        const file = new File([blob], `render-${video.id.slice(0, 8)}.mp4`, { type: 'video/mp4' });
+        setShareFiles([file]);
+      }
     } catch (err: any) {
       toast.error(`Failed to load ${label.toLowerCase()} for sharing`);
       setShareDialogOpen(false);
@@ -211,18 +234,18 @@ export function RendersClient({ projectId, projectName, compositionType, initial
   };
 
   const handleShareConfirm = async () => {
-    if (!shareFile || !selectedVideo) return;
+    if (!shareFiles || shareFiles.length === 0 || !selectedVideo) return;
     try {
-      if (navigator.canShare && navigator.canShare({ files: [shareFile] })) {
+      if (navigator.canShare && navigator.canShare({ files: shareFiles })) {
         await navigator.share({
-          files: [shareFile],
+          files: shareFiles,
           title: `${isZip ? 'Photos' : 'Video'} from ${projectName}`,
           text: selectedVideo.caption || `Check out ${isZip ? 'these photos' : 'this video'}!`
         });
         toast.success("Shared successfully");
         setShareDialogOpen(false);
       } else {
-        toast.error("Sharing not supported on this device.");
+        toast.error("Sharing not supported or files too large for this device.");
       }
     } catch (err: any) {
       if (err.name !== 'AbortError') {
@@ -415,15 +438,17 @@ export function RendersClient({ projectId, projectName, compositionType, initial
             {shareDialogLoading ? (
               <div className="flex flex-col items-center gap-3">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Downloading Blob...</p>
+                <p className="text-sm text-muted-foreground">{isZip ? "Extracting photos..." : "Downloading Video..."}</p>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-3">
                 <div className="p-3 bg-green-500/10 rounded-full">
                   <Check className="h-6 w-6 text-green-500" />
                 </div>
-                <p className="text-sm font-medium">{label} Ready</p>
-                <p className="text-xs text-muted-foreground max-w-full px-4 truncate">{shareFile?.name}</p>
+                <p className="text-sm font-medium">{isZip ? `${shareFiles?.length} Photos` : "Video"} Ready</p>
+                <p className="text-xs text-muted-foreground max-w-full px-4 truncate">
+                  {isZip ? `${selectedVideo?.id.slice(0, 8)}.zip content` : shareFiles?.[0]?.name}
+                </p>
               </div>
             )}
           </div>
@@ -431,7 +456,7 @@ export function RendersClient({ projectId, projectName, compositionType, initial
             <Button variant="ghost" onClick={() => setShareDialogOpen(false)} disabled={shareDialogLoading}>
               Cancel
             </Button>
-            <Button onClick={handleShareConfirm} disabled={shareDialogLoading || !shareFile}>
+            <Button onClick={handleShareConfirm} disabled={shareDialogLoading || !shareFiles || shareFiles.length === 0}>
               Share Now
             </Button>
           </div>

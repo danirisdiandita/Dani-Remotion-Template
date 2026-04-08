@@ -25,6 +25,7 @@
     "@remotion/zod-types": "4.0.443",
     "@tailwindcss/postcss": "^4.2.2",
     "@tanstack/react-query": "^5.96.2",
+    "adm-zip": "^0.5.17",
     "better-auth": "^1.5.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -51,6 +52,7 @@
   },
   "devDependencies": {
     "@remotion/eslint-config-flat": "4.0.443",
+    "@types/adm-zip": "^0.5.8",
     "@types/pg": "^8.20.0",
     "@types/react": "19.2.7",
     "@types/web": "0.0.166",
