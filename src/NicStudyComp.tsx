@@ -34,6 +34,7 @@ const fontFaceStyles = `
 `;
 
 const fontFamily = '"Montserrat", "Inter", "Noto Color Emoji", sans-serif';
+const titleFontFamily = '"Playfair Display", "Noto Color Emoji", serif';
 
 // ─── Plaid Background ────────────────────────────────────────────────────────
 
@@ -165,7 +166,7 @@ const TitleSlide: React.FC<{
       {/* Title */}
       <h1
         style={{
-          fontFamily: '"Playfair Display", serif',
+          fontFamily: titleFontFamily,
           fontSize: 112,
           fontWeight: 700,
           fontStyle: 'italic',
@@ -244,7 +245,7 @@ const TipsSlide: React.FC<{
       >
         <h2
           style={{
-            fontFamily: '"Playfair Display", serif',
+            fontFamily: titleFontFamily,
             fontSize: 64,
             fontWeight: 700,
             fontStyle: 'italic',
