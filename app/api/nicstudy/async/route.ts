@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+// import { auth } from "@/lib/auth";
+// import { headers } from "next/headers";
 import { createTaskAPI } from "@/lib/cloud-task";
 import { ENV } from "@/config/constant";
 
 export async function POST(req: Request) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  // const session = await auth.api.getSession({
+  //   headers: await headers(),
+  // });
 
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // if (!session) {
+  //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // }
 
   try {
     const body = await req.json();
@@ -30,9 +30,9 @@ export async function POST(req: Request) {
       url: targetUrl
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      message: "NicStudy carousel rendering task queued successfully" 
+    return NextResponse.json({
+      success: true,
+      message: "NicStudy carousel rendering task queued successfully"
     });
   } catch (error: any) {
     console.error("NicStudy Async Error:", error);
