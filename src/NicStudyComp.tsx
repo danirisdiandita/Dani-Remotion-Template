@@ -221,10 +221,10 @@ const TipsSlide: React.FC<{
     <div
       style={{
         position: 'absolute',
-        top: 100,
+        top: 300,
         left: 60,
         right: 60,
-        bottom: 140,
+        bottom: 300,
         backgroundColor: COLORS.white,
         borderRadius: 24,
         padding: '70px 70px',
