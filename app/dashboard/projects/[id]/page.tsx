@@ -17,6 +17,7 @@ import {
   Download,
   ArrowLeft,
   Sparkles,
+  Save,
   Image as ImageIcon
 } from "lucide-react";
 import Link from "next/link";
@@ -432,6 +433,23 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             <div className="flex items-center gap-2">
               <h2 className="text-lg sm:text-xl font-bold tracking-tight">NicStudy Content</h2>
             </div>
+            <Button
+              size="sm"
+              onClick={() => {
+                updateProject({
+                  id: projectId,
+                  name: project.name,
+                  description: JSON.stringify(nicstudyProps)
+                }, {
+                  onSuccess: () => toast.success("Content saved successfully")
+                });
+              }}
+              disabled={isUpdatingProject}
+              className="h-8 font-bold text-xs"
+            >
+              {isUpdatingProject ? <Loader2 className="mr-2 size-3 animate-spin" /> : <Save className="mr-2 size-3" />}
+              Save Content
+            </Button>
           </div>
           <div className="max-w-2xl">
             <NicStudyEditor
@@ -439,12 +457,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               value={nicstudyProps}
               onPropsChange={(newProps) => {
                 setNicstudyProps(newProps);
-                // Auto-persist nicely
-                updateProject({
-                  id: projectId,
-                  name: project.name,
-                  description: JSON.stringify(newProps)
-                });
               }}
             />
           </div>

@@ -2,7 +2,7 @@
 
 import {
   Video,
-  LayoutDashboard,
+  // LayoutDashboard,
   Settings,
   LogOut,
   User,
@@ -58,12 +58,12 @@ export function AppSidebar() {
           <SidebarGroupLabel>Application</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
+              {/* <SidebarMenuItem>
                 <SidebarMenuButton render={<Link href="/dashboard" />}>
                   <LayoutDashboard className="size-4" />
                   <span>Dashboard</span>
                 </SidebarMenuButton>
-              </SidebarMenuItem>
+              </SidebarMenuItem> */}
               <SidebarMenuItem>
                 <SidebarMenuButton render={<Link href="/dashboard/projects" />}>
                   <SquareKanban className="size-4" />

@@ -20,7 +20,7 @@ export function SignInForm() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       const { error } = await signIn.email({
         email,
@@ -32,7 +32,7 @@ export function SignInForm() {
         toast.error(error.message || "Failed to sign in");
       } else {
         toast.success("Welcome back!");
-        router.push("/dashboard");
+        router.push("/dashboard/projects");
       }
     } catch (err) {
       toast.error("Something went wrong");
@@ -52,11 +52,11 @@ export function SignInForm() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                placeholder="name@example.com" 
-                required 
+              <Input
+                id="email"
+                type="email"
+                placeholder="name@example.com"
+                required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
@@ -66,10 +66,10 @@ export function SignInForm() {
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
               </div>
-              <Input 
-                id="password" 
-                type="password" 
-                required 
+              <Input
+                id="password"
+                type="password"
+                required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
