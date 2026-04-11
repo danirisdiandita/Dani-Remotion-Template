@@ -11,3 +11,4 @@ build
 /public/renders
 /generated/prisma
 /public/tmp
+/tmp

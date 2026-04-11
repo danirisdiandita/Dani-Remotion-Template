@@ -25,7 +25,7 @@ export function SignInForm() {
       const { error } = await signIn.email({
         email,
         password,
-        callbackURL: "/dashboard",
+        callbackURL: "/dashboard/projects",
       });
 
       if (error) {
