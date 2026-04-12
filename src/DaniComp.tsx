@@ -52,7 +52,7 @@ const VideoSegment: React.FC<{
           flexDirection: 'column',
           justifyContent: getJustifyContent(),
           alignItems: 'center',
-          padding: '0 40px',
+          padding: '0 80px',
           paddingBottom: getPaddingBottom(),
           paddingTop: getPaddingTop(),
         }}
