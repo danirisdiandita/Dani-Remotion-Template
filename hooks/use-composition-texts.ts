@@ -17,7 +17,7 @@ export function useAddCompositionText(compositionId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { text: string; startTime?: number; endTime?: number; positionX?: number; positionY?: number; style?: any }) => {
+    mutationFn: async (data: { text: string; startTime?: number; endTime?: number; positionX?: number; positionY?: number; style?: any } | { text: string; startTime?: number; endTime?: number; positionX?: number; positionY?: number; style?: any }[]) => {
       const res = await fetch(`/api/compositions/${compositionId}/texts`, {
         method: "POST",
         body: JSON.stringify(data),

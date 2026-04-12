@@ -14,7 +14,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   try {
     const { id: compositionId } = await params;
-    const { text, startTime, endTime, positionX, positionY, style } = await req.json();
+    const body = await req.json();
+
+    if (Array.isArray(body)) {
+      const texts = await prisma.overlayText.createMany({
+        data: body.map((item) => ({
+          compositionId,
+          text: item.text || "New Text",
+          startTime: item.startTime || 0,
+          endTime: item.endTime || 5,
+          positionX: item.positionX || 50,
+          positionY: item.positionY || 50,
+          style: typeof item.style === "string" ? item.style : JSON.stringify(item.style || {}),
+        })),
+      });
+      return NextResponse.json(texts);
+    }
+
+    const { text, startTime, endTime, positionX, positionY, style } = body;
 
     const overlayText = await prisma.overlayText.create({
       data: {

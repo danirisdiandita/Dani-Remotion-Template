@@ -87,9 +87,8 @@ export function CompositionEditor({ composition, open, onOpenChange }: Compositi
     const lines = pendingAddText.split(/\r?\n/).map(l => l.trim()).filter(l => !!l);
 
     try {
-      for (const line of lines) {
-        await addText({ text: line });
-      }
+      const payload = lines.map(line => ({ text: line }));
+      await addText(payload);
       setPendingAddText("");
       setShowAddTextForm(false);
     } catch (err) {
