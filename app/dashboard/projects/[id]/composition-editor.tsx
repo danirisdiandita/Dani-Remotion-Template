@@ -5,14 +5,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Trash2, Upload, Type, Music, Image as ImageIcon, Video, Loader2, Plus, FileText, X } from "lucide-react";
+import { Trash2, Upload, Type, Music, Image as ImageIcon, Video, Loader2, Plus, FileText, X, ArrowUp, ArrowDown, Move, Settings2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useCompositionAssets, useAddCompositionAsset, useDeleteCompositionAsset } from "@/hooks/use-composition-assets";
 import { useCompositionTexts, useAddCompositionText, useDeleteCompositionText, useUpdateCompositionText } from "@/hooks/use-composition-texts";
+import { useUpdateComposition } from "@/hooks/use-composition";
 import { useUploadAsset } from "@/hooks/use-assets";
 import { useDropzone } from "react-dropzone";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 
 interface CompositionEditorProps {
@@ -32,10 +39,18 @@ export function CompositionEditor({ composition, open, onOpenChange }: Compositi
   const { mutateAsync: addText, isPending: isAddingText } = useAddCompositionText(composition?.id);
   const { mutate: updateText } = useUpdateCompositionText(composition?.id);
   const { mutate: deleteText } = useDeleteCompositionText(composition?.id);
+  const { mutate: updateComposition } = useUpdateComposition(composition?.projectId);
+
+  // --- Local orientation state (to avoid stale prop after mutation) ---
+  const [localOrientation, setLocalOrientation] = useState<string>(composition?.orientation || 'bottom');
+
+  useEffect(() => {
+    setLocalOrientation(composition?.orientation || 'bottom');
+  }, [composition?.orientation, composition?.id]);
 
   // --- Asset Upload (Batch) ---
   const [uploadingCount, setUploadingCount] = useState(0);
-  
+
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     setUploadingCount(acceptedFiles.length);
     for (const file of acceptedFiles) {
@@ -65,10 +80,12 @@ export function CompositionEditor({ composition, open, onOpenChange }: Compositi
   const [pendingAddText, setPendingAddText] = useState("");
   const [editingTexts, setEditingTexts] = useState<Record<string, string>>({});
 
+  if (!composition) return null;
+
   const handleCreateLayers = async () => {
     if (!pendingAddText.trim()) return;
     const lines = pendingAddText.split(/\r?\n/).map(l => l.trim()).filter(l => !!l);
-    
+
     try {
       for (const line of lines) {
         await addText({ text: line });
@@ -130,14 +147,18 @@ export function CompositionEditor({ composition, open, onOpenChange }: Compositi
 
             <div className="flex-1 overflow-hidden p-6">
               <Tabs defaultValue="assets" className="h-full flex flex-col" onValueChange={(value) => setSelectedTab(value)} value={selectedTab}>
-                <TabsList className="grid w-full grid-cols-2 mb-8 bg-muted/60 p-1.5 rounded-xl border border-border/50">
+                <TabsList className="grid w-full grid-cols-3 mb-8 bg-muted/60 p-1.5 rounded-xl border border-border/50">
                   <TabsTrigger value="assets" className={`flex items-center justify-center gap-2.5 py-2.5 text-xs font-bold transition-all text-muted-foreground hover:text-foreground hover:bg-muted/50 data-selected:bg-primary data-selected:text-primary-foreground data-selected:shadow-md rounded-lg ${selectedTab === "assets" ? "bg-primary text-primary-foreground shadow-md" : ""}`}>
                     <ImageIcon className="size-4" />
-                    Audio & Video
+                    Media
                   </TabsTrigger>
                   <TabsTrigger value="texts" className={`flex items-center justify-center gap-2.5 py-2.5 text-xs font-bold transition-all text-muted-foreground hover:text-foreground hover:bg-muted/50 data-selected:bg-primary data-selected:text-primary-foreground data-selected:shadow-md rounded-lg ${selectedTab === "texts" ? "bg-primary text-primary-foreground shadow-md" : ""}`}>
                     <Type className="size-4" />
-                    Text Overlays
+                    Captions
+                  </TabsTrigger>
+                  <TabsTrigger value="settings" className={`flex items-center justify-center gap-2.5 py-2.5 text-xs font-bold transition-all text-muted-foreground hover:text-foreground hover:bg-muted/50 data-selected:bg-primary data-selected:text-primary-foreground data-selected:shadow-md rounded-lg ${selectedTab === "settings" ? "bg-primary text-primary-foreground shadow-md" : ""}`}>
+                    <Settings2 className="size-4" />
+                    Settings
                   </TabsTrigger>
                 </TabsList>
 
@@ -214,7 +235,7 @@ export function CompositionEditor({ composition, open, onOpenChange }: Compositi
 
                       {showAddTextForm && (
                         <div className="space-y-4 p-4 border rounded-xl bg-muted/5 transition-all">
-                          <Textarea 
+                          <Textarea
                             value={pendingAddText}
                             onChange={(e) => setPendingAddText(e.target.value)}
                             placeholder="Type text... (Multiline for multiple layers)"
@@ -241,7 +262,7 @@ export function CompositionEditor({ composition, open, onOpenChange }: Compositi
                             {texts?.map((ot: any) => {
                               const pending = editingTexts[ot.id];
                               const isEdited = pending !== undefined && pending !== ot.text;
-                              
+
                               return (
                                 <div key={ot.id} className="group flex items-center gap-4 p-4 rounded-xl border border-border/50 bg-card/30 shadow-sm hover:bg-card/50 hover:border-primary/10 transition-all relative overflow-hidden">
                                   <div className="absolute top-0 left-0 w-1 h-full bg-primary/20" />
@@ -251,7 +272,32 @@ export function CompositionEditor({ composition, open, onOpenChange }: Compositi
                                   <div className="flex-1 space-y-2">
                                     <div className="flex items-center justify-between">
                                       <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Content</Label>
-                                      {isEdited && <Button size="xs" variant="secondary" className="h-6 px-2 text-[10px]" onClick={() => handleUpdateLayer(ot.id)}>Save Sync</Button>}
+                                      <div className="flex items-center gap-2">
+                                        {/* Orientation Dropdown (Sequence Level) */}
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger render={
+                                            <Button
+                                              variant="outline"
+                                              size="xs"
+                                              className="h-6 px-2 text-[9px] uppercase font-mono gap-1"
+                                            />
+                                          }>
+                                            Sequence Position: {localOrientation}
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent>
+                                            <DropdownMenuItem onClick={() => { setLocalOrientation('top'); updateComposition({ id: composition.id, orientation: 'top' }); }}>
+                                              <ArrowUp className="mr-2 size-3.5" /> Top
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => { setLocalOrientation('center'); updateComposition({ id: composition.id, orientation: 'center' }); }}>
+                                              <Move className="mr-2 size-3.5" /> Center
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => { setLocalOrientation('bottom'); updateComposition({ id: composition.id, orientation: 'bottom' }); }}>
+                                              <ArrowDown className="mr-2 size-3.5" /> Bottom
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
+                                        {isEdited && <Button size="xs" variant="secondary" className="h-6 px-2 text-[10px]" onClick={() => handleUpdateLayer(ot.id)}>Save Sync</Button>}
+                                      </div>
                                     </div>
                                     <Textarea
                                       className="min-h-[60px] bg-background/50 border-border/50 focus:border-primary/30 text-sm p-3 rounded-xl"
@@ -269,6 +315,68 @@ export function CompositionEditor({ composition, open, onOpenChange }: Compositi
                         )}
                       </ScrollArea>
                     </div>
+                  </TabsContent>
+                  <TabsContent value="settings" className="h-full mt-0 focus-visible:ring-0">
+                    <ScrollArea className="h-full pr-4">
+                      <div className="flex flex-col space-y-6 pb-12">
+                        <div className="bg-muted/10 p-6 rounded-3xl border border-border/50 space-y-6">
+                          <div className="space-y-1.5">
+                            <h3 className="text-sm font-extrabold uppercase tracking-widest text-primary/80">Sequence Layout</h3>
+                            <p className="text-[10px] text-muted-foreground/60 font-mono">Core configuration for this sequence segment</p>
+                          </div>
+
+                          <div className="space-y-4 pt-6 border-t border-dashed border-border/40">
+                            <div className="flex flex-col gap-3">
+                              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Text Positioning</Label>
+                              <div className="flex items-center gap-2">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger render={
+                                    <Button
+                                      variant="outline"
+                                      className="w-full justify-between font-mono uppercase text-xs h-12 px-5 rounded-xl border-border/50 bg-background/50 hover:bg-muted/30 transition-all shadow-sm group"
+                                    />
+                                  }>
+                                      <div className="flex items-center gap-3">
+                                        <div className="size-6 rounded-md bg-primary/10 flex items-center justify-center">
+                                          {localOrientation === 'top' && <ArrowUp className="size-3.5 text-primary" />}
+                                          {localOrientation === 'center' && <Move className="size-3.5 text-primary" />}
+                                          {localOrientation === 'bottom' && <ArrowDown className="size-3.5 text-primary" />}
+                                        </div>
+                                        <span className="font-bold tracking-tight">{localOrientation} Position</span>
+                                      </div>
+                                      <Settings2 className="size-4 opacity-20 group-hover:opacity-100 transition-opacity" />
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent className="w-[300px]">
+                                      <DropdownMenuItem onClick={() => { setLocalOrientation('top'); updateComposition({ id: composition.id, orientation: 'top' }); }} className="py-2.5">
+                                        <ArrowUp className="mr-3 size-4 text-primary/60" />
+                                        <div className="flex flex-col">
+                                          <span className="font-bold text-xs uppercase">Top Aligned</span>
+                                          <span className="text-[9px] text-muted-foreground">Positions text at the top of the frame</span>
+                                        </div>
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => { setLocalOrientation('center'); updateComposition({ id: composition.id, orientation: 'center' }); }} className="py-2.5">
+                                        <Move className="mr-3 size-4 text-primary/60" />
+                                        <div className="flex flex-col">
+                                          <span className="font-bold text-xs uppercase">Center Aligned</span>
+                                          <span className="text-[9px] text-muted-foreground">Perfectly centered in the frame</span>
+                                        </div>
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => { setLocalOrientation('bottom'); updateComposition({ id: composition.id, orientation: 'bottom' }); }} className="py-2.5">
+                                        <ArrowDown className="mr-3 size-4 text-primary/60" />
+                                        <div className="flex flex-col">
+                                          <span className="font-bold text-xs uppercase">Bottom Aligned</span>
+                                          <span className="text-[9px] text-muted-foreground">Docked at the bottom (Standard style)</span>
+                                        </div>
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                              <p className="text-[10px] text-muted-foreground/40 italic pl-1">※ This setting overrides all individual layer defaults for this sequence.</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </ScrollArea>
                   </TabsContent>
                 </div>
               </Tabs>

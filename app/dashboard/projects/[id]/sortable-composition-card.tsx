@@ -4,7 +4,8 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Play, MoreVertical, Pencil, Trash2, GripVertical } from "lucide-react";
+import { ArrowUp, ArrowDown, Move, Play, MoreVertical, Pencil, Trash2, GripVertical } from "lucide-react";
+import { useUpdateComposition } from "@/hooks/use-composition";
 import { useState } from "react";
 import {
   DropdownMenu,
@@ -36,6 +37,8 @@ export function SortableCompositionCard({
 }: SortableCompositionCardProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
+  const { mutate: updateComposition } = useUpdateComposition(composition.projectId);
+
   const {
     attributes,
     listeners,
@@ -51,6 +54,25 @@ export function SortableCompositionCard({
     zIndex: isDragging ? 50 : "auto",
     opacity: isDragging ? 0.5 : 1,
   };
+
+  // Logic for orientation toggle (Sequence Level)
+  const currentOrientation = composition.orientation || 'bottom';
+
+  const handleToggleOrientation = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    const orientations: ('bottom' | 'center' | 'top')[] = ['bottom', 'center', 'top'];
+    const currentIndex = orientations.indexOf(currentOrientation as any);
+    const nextIndex = (currentIndex + 1) % orientations.length;
+    const nextOrientation = orientations[nextIndex];
+
+    updateComposition({
+      id: composition.id,
+      orientation: nextOrientation
+    });
+  };
+
+  if (!composition) return null;
 
   return (
     <>
@@ -69,6 +91,7 @@ export function SortableCompositionCard({
                 <GripVertical className="size-4 text-muted-foreground" />
               </div>
 
+
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                   <Button 
                   size="icon" 
@@ -85,16 +108,29 @@ export function SortableCompositionCard({
               <h3 className="font-semibold truncate text-sm flex-1">{composition.name || `Sequence #${composition.order}`}</h3>
               <div onClick={(e) => e.stopPropagation()}>
                 <DropdownMenu>
-                    <DropdownMenuTrigger render={<Button variant="ghost" size="icon-xs" className="opacity-0 group-hover:opacity-100 transition-opacity" />}>
-                        <MoreVertical className="size-3" />
-                    </DropdownMenuTrigger>
+                    <DropdownMenuTrigger render={
+                        <Button variant="ghost" size="icon-xs" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                          <MoreVertical className="size-3" />
+                        </Button>
+                    } />
                     <DropdownMenuContent>
                     <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(composition); }}>
                         <Pencil className="mr-2 size-3.5" />
                         Edit
                     </DropdownMenuItem>
+                    
+                    <div className="px-2 py-1.5 text-[10px] font-bold uppercase text-muted-foreground border-t border-border/50 mt-1">
+                      Set Orientation
+                    </div>
+                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleToggleOrientation(e); }}>
+                        <div className="flex items-center gap-2">
+                          <Move className="size-3.5" /> 
+                          Cycle Position ({currentOrientation})
+                        </div>
+                    </DropdownMenuItem>
+
                     <DropdownMenuItem 
-                        className="text-destructive font-medium" 
+                        className="text-destructive font-medium border-t border-border/50 mt-1" 
                         onClick={(e) => { 
                           e.stopPropagation();
                           setDeleteDialogOpen(true);
@@ -107,9 +143,22 @@ export function SortableCompositionCard({
                 </DropdownMenu>
               </div>
               </div>
-              <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-              <span>Index: {composition.order}</span>
-              <span>{new Date(composition.updatedAt).toLocaleDateString()}</span>
+              <div className="flex items-center justify-between text-[10px] text-muted-foreground mt-3 pt-3 border-t border-border/50">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold uppercase tracking-tighter opacity-50">Orientation</span>
+                  <Button 
+                    variant="secondary" 
+                    size="xs" 
+                    className="h-6 px-2 font-mono uppercase text-[9px] gap-1.5 bg-primary/5 hover:bg-primary/10 text-primary border border-primary/20"
+                    onClick={handleToggleOrientation}
+                  >
+                    {currentOrientation === 'top' && <ArrowUp className="size-2.5" />}
+                    {currentOrientation === 'center' && <Move className="size-2.5" />}
+                    {currentOrientation === 'bottom' && <ArrowDown className="size-2.5" />}
+                    {currentOrientation}
+                  </Button>
+                </div>
+                <span>Index: {composition.order}</span>
               </div>
           </CardContent>
         </Card>

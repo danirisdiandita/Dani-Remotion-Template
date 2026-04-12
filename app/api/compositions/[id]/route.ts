@@ -27,7 +27,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   try {
     const { id } = await params;
-    const { name, description, order } = await req.json();
+    const { name, description, order, orientation } = await req.json();
 
     const composition = await getCompositionWithProject(id, session.user.id);
     if (!composition) {
@@ -40,6 +40,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         name,
         description,
         order: order !== undefined ? order : undefined,
+        orientation,
       },
     });
 

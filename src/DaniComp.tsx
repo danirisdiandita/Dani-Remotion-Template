@@ -5,7 +5,24 @@ const VideoSegment: React.FC<{
   src: string;
   text: string;
   durationInFrames: number;
-}> = ({ src, text }) => {
+  orientation?: 'top' | 'center' | 'bottom';
+}> = ({ src, text, orientation = 'bottom' }) => {
+  const getJustifyContent = () => {
+    if (orientation === 'top') return 'flex-start';
+    if (orientation === 'center') return 'center';
+    return 'flex-end';
+  };
+
+  const getPaddingBottom = () => {
+    if (orientation === 'bottom') return '493px';
+    return '0';
+  };
+
+  const getPaddingTop = () => {
+    if (orientation === 'top') return '300px';
+    return '0';
+  };
+
   return (
     <AbsoluteFill style={{ backgroundColor: 'black' }}>
       <style>
@@ -33,10 +50,11 @@ const VideoSegment: React.FC<{
         style={{
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'flex-end',
+          justifyContent: getJustifyContent(),
           alignItems: 'center',
           padding: '0 40px',
-          paddingBottom: '493px',
+          paddingBottom: getPaddingBottom(),
+          paddingTop: getPaddingTop(),
         }}
       >
         <div
@@ -78,6 +96,7 @@ export const DaniComp: React.FC<{
     src: string;
     text: string;
     durationInFrames: number;
+    orientation?: 'top' | 'center' | 'bottom';
   }[];
 }> = ({ segments = [] }) => {
   return (

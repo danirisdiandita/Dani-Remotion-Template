@@ -56,7 +56,11 @@ export async function POST(req: Request) {
       const textIndex = counter % texts.length;
 
       const s3Key = videoAssets[assetIndex].asset.s3Key;
-      const overlayText = texts[textIndex].text;
+      const overlayTextObj = texts[textIndex];
+      const overlayText = overlayTextObj.text;
+
+      // Use orientation from composition (sequence-level) or default to bottom
+      const orientation = comp.orientation || 'bottom';
 
       // Extract just the file name extension for the local copy
       const ext = path.extname(s3Key) || '.mp4';
@@ -73,6 +77,7 @@ export async function POST(req: Request) {
       videoSequence.push({
         src: publicRelativePath,
         text: overlayText,
+        orientation: orientation,
       });
     }
 

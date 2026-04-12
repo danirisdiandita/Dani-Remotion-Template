@@ -34,7 +34,7 @@ export function useUpdateComposition(projectId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...data }: { id: string; name: string; description?: string }) => {
+    mutationFn: async ({ id, ...data }: { id: string; name?: string; description?: string; orientation?: string }) => {
       const res = await fetch(`/api/compositions/${id}`, {
         method: "PATCH",
         body: JSON.stringify(data),

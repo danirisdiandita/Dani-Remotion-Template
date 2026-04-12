@@ -1,4 +1,5 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { v4 as uuid } from 'uuid';
 import { ENV } from '@/config/constant';
@@ -176,18 +177,34 @@ export const downloadToBuffer = async (s3Key: string): Promise<Buffer> => {
 };
 
 /**
- * Uploads a local file to S3.
+ * Uploads a local file to S3 using multipart upload.
+ * Automatically splits into chunks for large files to avoid S3 throttling (SlowDownWrite).
  */
 export const uploadFileToS3 = async (localPath: string, s3Key: string, contentType: string) => {
     const fs = await import('node:fs');
     const fileStream = fs.createReadStream(localPath);
-    const command = new PutObjectCommand({
-        Bucket: ENV.s3.bucket,
-        Key: s3Key,
-        Body: fileStream,
-        ContentType: contentType,
+
+    const upload = new Upload({
+        client: s3Client,
+        params: {
+            Bucket: ENV.s3.bucket,
+            Key: s3Key,
+            Body: fileStream,
+            ContentType: contentType,
+        },
+        queueSize: 4,        // 4 concurrent part uploads
+        partSize: 5 * 1024 * 1024,  // 5MB per part (S3 minimum is 5MB)
+        leavePartsOnError: false,
     });
-    await s3Client.send(command);
+
+    upload.on('httpUploadProgress', (progress) => {
+        const pct = progress.total
+            ? Math.floor(((progress.loaded ?? 0) / progress.total) * 100)
+            : '?';
+        console.log(`📤 S3 upload progress: ${pct}% (${progress.loaded}/${progress.total} bytes)`);
+    });
+
+    await upload.done();
     return s3Key;
 };
 
