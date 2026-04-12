@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useProjectRenders } from "@/hooks/use-renders";
 import {
   Card,
   CardContent,
@@ -58,27 +59,26 @@ interface RendersClientProps {
   projectId: string;
   projectName: string;
   compositionType: string;
-  initialRenders: RenderRecord[];
 }
 
-export function RendersClient({ projectId, projectName, compositionType, initialRenders }: RendersClientProps) {
+export function RendersClient({ projectId, projectName, compositionType }: RendersClientProps) {
   const isZip = compositionType === "carousel" || compositionType === "nicstudy";
   const label = isZip ? "File" : "Video";
   const labelPlural = isZip ? "Files" : "Videos";
+  const queryClient = useQueryClient();
 
-  const router = useRouter();
+  const { data: rendersArray = [], isLoading: rendersLoading } = useProjectRenders(projectId);
 
   const parsedRenders = useMemo(() => {
-    return initialRenders.map(r => ({
+    return rendersArray.map((r: any) => ({
       ...r,
       checklisted: !!r.checklisted,
       createdAt: new Date(r.createdAt)
     }));
-  }, [initialRenders]);
+  }, [rendersArray]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
 
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareDialogLoading, setShareDialogLoading] = useState(false);
@@ -92,28 +92,17 @@ export function RendersClient({ projectId, projectName, compositionType, initial
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
-  useEffect(() => {
-    const next = new Set<string>();
-    parsedRenders.forEach(r => {
-      if (r.checklisted) next.add(r.id);
-    });
-    setCheckedIds(next);
+  const checklistedCount = useMemo(() => {
+    return parsedRenders.filter((r: RenderRecord) => r.checklisted).length;
   }, [parsedRenders]);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    router.refresh();
+    queryClient.invalidateQueries({ queryKey: ["projects", projectId, "renders"] });
     setTimeout(() => setIsRefreshing(false), 800);
   };
 
   const handleToggleCheck = async (id: string, isChecked: boolean) => {
-    setCheckedIds(prev => {
-      const next = new Set(prev);
-      if (isChecked) next.add(id);
-      else next.delete(id);
-      return next;
-    });
-
     try {
       const res = await fetch(`/api/renders/${id}`, {
         method: "PATCH",
@@ -121,31 +110,25 @@ export function RendersClient({ projectId, projectName, compositionType, initial
         body: JSON.stringify({ checklisted: isChecked })
       });
       if (!res.ok) throw new Error("Failed to sync checklist");
-      router.refresh();
+      queryClient.invalidateQueries({ queryKey: ["projects", projectId, "renders"] });
     } catch (err: any) {
       toast.error(err.message || "Failed to update checklisted status");
-      setCheckedIds(prev => {
-        const next = new Set(prev);
-        if (!isChecked) next.add(id);
-        else next.delete(id);
-        return next;
-      });
     }
   };
 
   const handleBulkDelete = async () => {
-    if (checkedIds.size === 0) return;
+    const selectedIds = parsedRenders.filter((r: RenderRecord) => r.checklisted).map((r: RenderRecord) => r.id);
+    if (selectedIds.length === 0) return;
     setIsDeletingBulk(true);
     try {
       const res = await fetch("/api/renders/bulk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: Array.from(checkedIds) })
+        body: JSON.stringify({ ids: selectedIds })
       });
       if (!res.ok) throw new Error("Failed to bulk delete");
-      toast.success(`Deleted ${checkedIds.size} ${labelPlural.toLowerCase()}.`);
-      setCheckedIds(new Set());
-      router.refresh();
+      toast.success(`Deleted ${selectedIds.length} ${labelPlural.toLowerCase()}.`);
+      queryClient.invalidateQueries({ queryKey: ["projects", projectId, "renders"] });
     } catch (err: any) {
       toast.error(err.message || "Bulk delete failed");
     } finally {
@@ -158,12 +141,7 @@ export function RendersClient({ projectId, projectName, compositionType, initial
       const res = await fetch(`/api/renders/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error(`Failed to delete ${label.toLowerCase()}`);
       toast.success(`${label} deleted.`);
-      setCheckedIds(prev => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
-      router.refresh();
+      queryClient.invalidateQueries({ queryKey: ["projects", projectId, "renders"] });
     } catch (err: any) {
       toast.error(err.message || "Deletion failed");
     } finally {
@@ -184,22 +162,41 @@ export function RendersClient({ projectId, projectName, compositionType, initial
     }
   };
 
-  const handleShareMobile = async (video: RenderRecord) => {
-    if (!video.downloadUrl) {
-      toast.error("Asset unavailable");
-      return;
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const fetchDownloadUrl = async (id: string) => {
+    const res = await fetch(`/api/renders/${id}/url`);
+    if (!res.ok) throw new Error("Failed to fetch download URL");
+    const { downloadUrl } = await res.json();
+    return downloadUrl;
+  };
+
+  const handleDownload = async (id: string) => {
+    setDownloadingId(id);
+    try {
+      const url = await fetchDownloadUrl(id);
+      window.location.href = url;
+    } catch (err: any) {
+      toast.error(err.message || "Download failed");
+    } finally {
+      setDownloadingId(null);
     }
+  };
+
+  const handleShareMobile = async (video: RenderRecord) => {
     setSharingId(video.id);
     setShareDialogOpen(true);
     setShareDialogLoading(true);
     setShareFiles(null);
     setSelectedVideo(video);
     try {
+      const downloadUrl = await fetchDownloadUrl(video.id);
+
       if (isZip) {
         const response = await fetch(`/api/renders/${video.id}`);
         if (!response.ok) throw new Error("Failed to extract files");
         const data = await response.json();
-        
+
         if (!data.files || data.files.length === 0) {
           toast.error("No files found in archive");
           setShareDialogOpen(false);
@@ -219,7 +216,7 @@ export function RendersClient({ projectId, projectName, compositionType, initial
         });
         setShareFiles(filesArray);
       } else {
-        const response = await fetch(video.downloadUrl);
+        const response = await fetch(downloadUrl);
         const blob = await response.blob();
         const file = new File([blob], `render-${video.id.slice(0, 8)}.mp4`, { type: 'video/mp4' });
         setShareFiles([file]);
@@ -254,7 +251,7 @@ export function RendersClient({ projectId, projectName, compositionType, initial
     }
   };
 
-  const filtered = parsedRenders.filter(gen =>
+  const filtered = parsedRenders.filter((gen: RenderRecord) =>
     (gen.caption || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     gen.id.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -280,14 +277,14 @@ export function RendersClient({ projectId, projectName, compositionType, initial
           </div>
 
           <div className="flex items-center gap-2">
-            {checkedIds.size > 0 && (
+            {checklistedCount > 0 && (
               <Button
                 variant="destructive"
                 disabled={isDeletingBulk}
                 onClick={handleBulkDelete}
               >
                 {isDeletingBulk ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                Delete ({checkedIds.size})
+                Delete ({checklistedCount})
               </Button>
             )}
             <Button
@@ -314,7 +311,12 @@ export function RendersClient({ projectId, projectName, compositionType, initial
         </div>
       </div>
 
-      {parsedRenders.length === 0 ? (
+      {(rendersLoading && !isRefreshing) ? (
+        <div className="flex flex-col items-center justify-center p-24 space-y-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary/20" />
+          <p className="text-sm text-muted-foreground animate-pulse">Loading exports...</p>
+        </div>
+      ) : parsedRenders.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-12 lg:p-24 border-2 border-dashed rounded-lg bg-muted/20 text-center space-y-4">
           <div className="p-4 bg-primary/10 rounded-full">
             {isZip ? <ImageIcon className="h-6 w-6 text-primary" /> : <Video className="h-6 w-6 text-primary" />}
@@ -331,11 +333,11 @@ export function RendersClient({ projectId, projectName, compositionType, initial
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((gen) => (
+          {filtered.map((gen: RenderRecord) => (
             <Card key={gen.id} className="overflow-hidden relative group border bg-card text-card-foreground gap-y-2">
               <div className="absolute top-4 left-4 z-20">
                 <Checkbox
-                  checked={checkedIds.has(gen.id)}
+                  checked={gen.checklisted}
                   onCheckedChange={(c) => handleToggleCheck(gen.id, !!c)}
                   className="bg-background shadow-md border-muted-foreground"
                 />
@@ -345,7 +347,7 @@ export function RendersClient({ projectId, projectName, compositionType, initial
                   <div className="space-y-1.5 pr-2">
                     <h3
                       className="font-semibold text-sm line-clamp-2 leading-snug cursor-pointer group-hover:text-primary transition-colors"
-                      onClick={() => handleToggleCheck(gen.id, !checkedIds.has(gen.id))}
+                      onClick={() => handleToggleCheck(gen.id, !gen.checklisted)}
                     >
                       {gen.caption || `Render #${gen.id.slice(0, 8).toUpperCase()}`}
                     </h3>
@@ -357,23 +359,25 @@ export function RendersClient({ projectId, projectName, compositionType, initial
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {gen.downloadUrl ? (
-                      <a href={gen.downloadUrl} download className="flex-1">
-                        <Button variant="default" size="sm" className="w-full">
-                          <Download className="mr-2 h-4 w-4" />
-                          Download
-                        </Button>
-                      </a>
-                    ) : (
-                      <Button variant="default" size="sm" disabled className="flex-1">
-                        <span>Unavailable</span>
-                      </Button>
-                    )}
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => handleDownload(gen.id)}
+                      disabled={downloadingId === gen.id}
+                    >
+                      {downloadingId === gen.id ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Download className="mr-2 h-4 w-4" />
+                      )}
+                      {downloadingId === gen.id ? "Preparing..." : "Download"}
+                    </Button>
                     <Button
                       variant="secondary"
                       size="sm"
                       onClick={() => handleShareMobile(gen)}
-                      disabled={sharingId === gen.id || !gen.downloadUrl}
+                      disabled={sharingId === gen.id}
                       title="Share Native"
                     >
                       {sharingId === gen.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share className="h-4 w-4" />}
