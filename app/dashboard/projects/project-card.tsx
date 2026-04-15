@@ -2,7 +2,8 @@
 
 import { useUpdateProject, useDeleteProject } from "@/hooks/use-project";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, Loader2, Video, Download, Settings } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Pencil, Trash2, Loader2, Video, Download, Settings, Images } from "lucide-react";
 import { useState } from "react";
 import {
   Dialog,
@@ -32,6 +33,7 @@ interface Project {
   id: string;
   name: string;
   description: string | null;
+  compositionType?: string | null;
   createdAt: Date | string;
   updatedAt?: Date | string;
 }
@@ -46,6 +48,14 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
   const { mutate: update, isPending: isUpdating } = useUpdateProject();
   const { mutate: deleteProj, isPending: isDeleting } = useDeleteProject();
+
+  const TYPE_LABELS: Record<string, { label: string; color: string }> = {
+    video: { label: "Dani", color: "bg-blue-500/10 text-blue-600 hover:bg-blue-500/20" },
+    nicstudy: { label: "Nic Study", color: "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20" },
+    carousel: { label: "Carousel", color: "bg-purple-500/10 text-purple-600 hover:bg-purple-500/20" },
+  };
+
+  const typeInfo = TYPE_LABELS[project.compositionType || "video"] || { label: "Project", color: "" };
 
   async function handleDelete() {
     deleteProj(project.id, {
@@ -71,7 +81,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
     <div className="group relative flex flex-col sm:flex-row items-center justify-between p-4 sm:p-6 rounded-xl border border-border bg-card hover:border-primary/50 transition-all duration-200 gap-4">
       <div className="flex items-center gap-4 w-full sm:w-auto">
         <div className="flex size-10 sm:size-12 items-center justify-center rounded-lg border border-border bg-muted/50 group-hover:bg-primary/5 text-muted-foreground group-hover:text-primary transition-colors">
-          <Video className="size-5 sm:size-6" />
+          {project.compositionType === 'video' || !project.compositionType ? (
+            <Video className="size-5 sm:size-6" />
+          ) : (
+            <Images className="size-5 sm:size-6" />
+          )}
         </div>
         <div className="flex flex-col min-w-0">
           <div className="flex items-center gap-2">
@@ -81,6 +95,9 @@ export function ProjectCard({ project }: ProjectCardProps) {
             >
               {project.name}
             </Link>
+            <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 font-bold uppercase tracking-wider border-none ${typeInfo.color}`}>
+              {typeInfo.label}
+            </Badge>
           </div>
           <p className="text-sm text-muted-foreground line-clamp-1 max-w-md">
             {project.description || "No description provided."}

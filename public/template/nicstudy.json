@@ -1,0 +1,19 @@
+{
+  "title": "Hari 1: Penalaran Umum (PU)",
+  "description": "Fokus: Mengolah informasi secara logis, kritis, dan kuantitatif.",
+  "tipsTitle": "Materi Wajib",
+  "tips": [
+    "Logika (Ponens, Tollens, dan Silogisme)",
+    "Memperkuat dan Memperlemah Pernyataan",
+    "Pernyataan Pasti Benar dan Mungkin Benar",
+    "Perbandingan",
+    "Pola Bilangan",
+    "Analisis Grafik/Tabel",
+    "Logika Analitik"
+  ],
+  "handle": "@nicstudy.id",
+  "durationPerSlide": 150,
+  "titleImage": null,
+  "tipsImage": null,
+  "ctaImage": null
+}

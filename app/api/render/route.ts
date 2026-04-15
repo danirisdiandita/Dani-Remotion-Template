@@ -8,7 +8,7 @@ import { randomUUID } from "crypto";
 
 export async function POST(req: Request) {
   try {
-    const { projectId } = await req.json();
+    const { projectId, videoSequence: overrideSequence } = await req.json();
     if (!projectId) {
       throw new Error("Missing projectId in request");
     }
@@ -43,24 +43,39 @@ export async function POST(req: Request) {
       await fs.promises.mkdir(absoluteTmpDir, { recursive: true });
     }
 
-    // Build the sequence using the requested modulo logic and download files
-    for (const comp of project.compositions) {
-      const videoAssets = comp.assets.filter((a: any) => a.asset.type === 'video');
-      const texts = comp.overlayTexts;
+    // Determine segments (either from override or compositions)
+    const segments = overrideSequence || project.compositions;
 
-      if (videoAssets.length === 0 || texts.length === 0) {
-        throw new Error(`Composition order ${comp.order} is missing assets or texts.`);
+    // Build the sequence
+    for (let i = 0; i < segments.length; i++) {
+      const segment = segments[i];
+      let s3Key = segment.src;
+      let overlayText = segment.text;
+      let orientation = segment.orientation || 'bottom';
+
+      // Fallback if src/text missing (using database compositions)
+      if (!s3Key || !overlayText) {
+        // Find matching composition by index (clamping to length)
+        const comp = project.compositions[i % project.compositions.length];
+        const videoAssets = comp.assets.filter((a: any) => a.asset.type === 'video');
+        const texts = comp.overlayTexts;
+
+        if (videoAssets.length === 0 || texts.length === 0) {
+          throw new Error(`Composition index ${i} is missing assets or texts.`);
+        }
+
+        if (!s3Key) {
+            const assetIndex = counter % videoAssets.length;
+            s3Key = videoAssets[assetIndex].asset.s3Key;
+        }
+        
+        if (!overlayText) {
+            const textIndex = counter % texts.length;
+            overlayText = texts[textIndex].text;
+        }
+
+        orientation = comp.orientation || orientation;
       }
-
-      const assetIndex = counter % videoAssets.length;
-      const textIndex = counter % texts.length;
-
-      const s3Key = videoAssets[assetIndex].asset.s3Key;
-      const overlayTextObj = texts[textIndex];
-      const overlayText = overlayTextObj.text;
-
-      // Use orientation from composition (sequence-level) or default to bottom
-      const orientation = comp.orientation || 'bottom';
 
       // Extract just the file name extension for the local copy
       const ext = path.extname(s3Key) || '.mp4';
@@ -71,8 +86,6 @@ export async function POST(req: Request) {
       await downloadFromS3(s3Key, localPath);
       downloadedFiles.push(localPath);
 
-      // Add to sequence - since staticFile() looks inside 'public/', 
-      // we store the relative path if we use public/tmp
       const publicRelativePath = tmpDirEnv.replace('./public/', '') + '/' + localFilename;
       videoSequence.push({
         src: publicRelativePath,

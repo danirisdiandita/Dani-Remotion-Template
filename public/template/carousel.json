@@ -1,0 +1,16 @@
+{
+  "carouselSequence": [
+    {
+      "src": "video-assets/placeholder-image-1.jpg",
+      "title": "Amazing Product",
+      "description": "Discover the amazing features we just launched",
+      "durationInFrames": 150
+    },
+    {
+      "src": "video-assets/placeholder-image-2.jpg",
+      "title": "Super Fast",
+      "description": "Everything happens in blink of an eye",
+      "durationInFrames": 150
+    }
+  ]
+}

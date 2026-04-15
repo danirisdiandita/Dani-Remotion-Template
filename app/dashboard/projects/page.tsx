@@ -3,6 +3,7 @@
 import { useProjects } from "@/hooks/use-project";
 import { ProjectCard } from "./project-card";
 import { CreateProjectButton } from "./create-project-button";
+import { BatchRenderButton } from "./batch-render-button";
 import { Loader2 } from "lucide-react";
 
 export default function ProjectsPage() {
@@ -32,7 +33,10 @@ export default function ProjectsPage() {
           <h1 className="text-2xl font-bold tracking-tight">Projects</h1>
           <p className="text-muted-foreground">Manage your video production projects.</p>
         </div>
-        <CreateProjectButton />
+        <div className="flex items-center gap-2">
+          <BatchRenderButton />
+          <CreateProjectButton />
+        </div>
       </div>
 
       {!projects || projects.length === 0 ? (

@@ -61,6 +61,7 @@ import { SortableCompositionCard } from "./sortable-composition-card";
 import { CompositionEditor } from "./composition-editor";
 import { useRender } from "@/hooks/use-render";
 import { NicStudyEditor, NicStudyProps } from "./nicstudy-editor";
+import { BulkRenderDialog } from "./bulk-render-dialog";
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: projectId } = use(params);
@@ -218,6 +219,14 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     updateProject({ id: projectId, name, description, counter, caption }, { onSuccess: () => setSettingsOpen(false) });
   };
 
+  const TYPE_LABELS: Record<string, { label: string; color: string }> = {
+    video: { label: "Dani", color: "bg-blue-500/10 text-blue-600 hover:bg-blue-500/20" },
+    nicstudy: { label: "Nic Study", color: "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20" },
+    carousel: { label: "Carousel", color: "bg-purple-500/10 text-purple-600 hover:bg-purple-500/20" },
+  };
+
+  const typeInfo = TYPE_LABELS[(project as any)?.compositionType || "video"] || { label: "Project", color: "" };
+
   return (
     <div className="space-y-6 pb-20 max-w-7xl overflow-hidden">
       {/* 1. Page Header & Breadcrumbs (Refined for Sidebar) */}
@@ -254,9 +263,14 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/60 bg-clip-text text-transparent">
                 {project.name}
               </h1>
-              <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-bold text-[10px] sm:text-xs">
-                {localComps.length} Sequence{localComps.length !== 1 ? 's' : ''}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 font-bold uppercase tracking-wider border-none ${typeInfo.color}`}>
+                  {typeInfo.label}
+                </Badge>
+                <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-bold text-[10px] sm:text-xs">
+                  {localComps.length} Sequence{localComps.length !== 1 ? 's' : ''}
+                </Badge>
+              </div>
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-2 max-w-2xl">
               <span className="shrink-0">{project.description || "No description provided."}</span>
@@ -379,6 +393,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             >
               <Settings className="size-4 opacity-70" />
             </Button>
+
+            <BulkRenderDialog 
+              projectId={projectId} 
+              projectName={project.name}
+              compositionType={(project as any)?.compositionType || "video"}
+            />
 
             <Button
               size="sm"
