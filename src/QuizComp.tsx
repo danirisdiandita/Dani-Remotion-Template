@@ -852,27 +852,30 @@ export const QuizComp: React.FC<{
 }> = ({ quizSequence = [], hook, hookAudioSrc, hookDurationInFrames }) => {
 
   return (
-    <Series>
-      {hook && hookDurationInFrames ? (
-        <Series.Sequence durationInFrames={hookDurationInFrames}>
-          <QuizHookIntro hook={hook} hookAudioSrc={hookAudioSrc} />
+    <AbsoluteFill>
+      <Audio src={staticFile("assets/nastelbom-background-music-486996.mp3")} volume={0.15} />
+      <Series>
+        {hook && hookDurationInFrames ? (
+          <Series.Sequence durationInFrames={hookDurationInFrames}>
+            <QuizHookIntro hook={hook} hookAudioSrc={hookAudioSrc} />
+          </Series.Sequence>
+        ) : null}
+        <Series.Sequence durationInFrames={45}>
+          <QuizIntro totalQuestions={quizSequence.length} />
         </Series.Sequence>
-      ) : null}
-      <Series.Sequence durationInFrames={45}>
-        <QuizIntro totalQuestions={quizSequence.length} />
-      </Series.Sequence>
-      {quizSequence.map((segment, index) => (
-        <Series.Sequence
-          key={index}
-          durationInFrames={segment.durationInFrames}
-        >
-          <QuizSegment
-            {...segment}
-            questionIndex={index}
-            totalQuestions={quizSequence.length}
-          />
-        </Series.Sequence>
-      ))}
-    </Series>
+        {quizSequence.map((segment, index) => (
+          <Series.Sequence
+            key={index}
+            durationInFrames={segment.durationInFrames}
+          >
+            <QuizSegment
+              {...segment}
+              questionIndex={index}
+              totalQuestions={quizSequence.length}
+            />
+          </Series.Sequence>
+        ))}
+      </Series>
+    </AbsoluteFill>
   );
 };

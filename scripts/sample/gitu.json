@@ -1,0 +1,78 @@
+{
+  "hook": "Only 5% of pre-med students get ALL of these right 👇",
+  "quizSequence": [
+    {
+      "question": "Which valve separates the left atrium from the left ventricle?",
+      "options": [
+        "Tricuspid",
+        "Mitral",
+        "Aortic",
+        "Pulmonic"
+      ],
+      "correctIndex": 1,
+      "simulatedTapIndex": 1,
+      "audioSrc": "tts/a3f82c1d-7e45-4b09-93dc-6f210be84a57/question_0.wav",
+      "waitPeriodMs": 4560,
+      "durationInFrames": 347
+    },
+    {
+      "question": "What is the powerhouse of the cell?",
+      "options": [
+        "Nucleus",
+        "Ribosome",
+        "Mitochondria",
+        "Golgi apparatus"
+      ],
+      "correctIndex": 2,
+      "simulatedTapIndex": 2,
+      "audioSrc": "tts/a3f82c1d-7e45-4b09-93dc-6f210be84a57/question_1.wav",
+      "waitPeriodMs": 2720,
+      "durationInFrames": 292
+    },
+    {
+      "question": "Normal resting heart rate in adults (beats/min)?",
+      "options": [
+        "40–60",
+        "60–100",
+        "100–120",
+        "120–140"
+      ],
+      "correctIndex": 1,
+      "simulatedTapIndex": 1,
+      "audioSrc": "tts/a3f82c1d-7e45-4b09-93dc-6f210be84a57/question_2.wav",
+      "waitPeriodMs": 4080,
+      "durationInFrames": 333
+    },
+    {
+      "question": "Which organ produces insulin?",
+      "options": [
+        "Liver",
+        "Adrenal gland",
+        "Pancreas",
+        "Spleen"
+      ],
+      "correctIndex": 2,
+      "simulatedTapIndex": 2,
+      "audioSrc": "tts/a3f82c1d-7e45-4b09-93dc-6f210be84a57/question_3.wav",
+      "waitPeriodMs": 2320,
+      "durationInFrames": 280
+    },
+    {
+      "question": "Which blood type is the universal donor?",
+      "options": [
+        "AB+",
+        "O+",
+        "A−",
+        "O−"
+      ],
+      "correctIndex": 3,
+      "simulatedTapIndex": 3,
+      "audioSrc": "tts/a3f82c1d-7e45-4b09-93dc-6f210be84a57/question_4.wav",
+      "waitPeriodMs": 3200,
+      "durationInFrames": 306
+    }
+  ],
+  "sessionId": "a3f82c1d-7e45-4b09-93dc-6f210be84a57",
+  "hookAudioSrc": "tts/a3f82c1d-7e45-4b09-93dc-6f210be84a57/hook.wav",
+  "hookDurationInFrames": 213
+}
