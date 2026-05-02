@@ -76,6 +76,7 @@ export const quizSchema = z.object({
       correctIndex: z.number(),
       simulatedTapIndex: z.number().optional().default(-1),
       durationInFrames: z.number().optional().default(180),
+      waitPeriodMs: z.number().optional().default(0),
     })
   ),
 });
@@ -87,6 +88,7 @@ const defaultQuizSequence = [
     correctIndex: 2,
     simulatedTapIndex: 0,
     durationInFrames: 180,
+    waitPeriodMs: 500,
   },
   {
     question: "Which planet is known as the Red Planet?",
@@ -94,6 +96,7 @@ const defaultQuizSequence = [
     correctIndex: 1,
     simulatedTapIndex: 1,
     durationInFrames: 180,
+    waitPeriodMs: 500,
   },
 ];
 

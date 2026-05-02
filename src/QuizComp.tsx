@@ -6,6 +6,8 @@ import {
   useCurrentFrame,
   spring,
   interpolate,
+  Audio,
+  Sequence,
 } from 'remotion';
 import {
   Book,
@@ -231,6 +233,7 @@ const QuizSegment: React.FC<{
   correctIndex: number;
   simulatedTapIndex: number;
   durationInFrames: number;
+  waitPeriodMs: number;
   questionIndex: number;
   totalQuestions: number;
 }> = ({
@@ -239,14 +242,24 @@ const QuizSegment: React.FC<{
   correctIndex,
   simulatedTapIndex,
   durationInFrames,
+  waitPeriodMs,
   questionIndex,
   totalQuestions,
 }) => {
   const frame = useCurrentFrame();
   const fps = 30;
 
-  const revealFrame = Math.floor(durationInFrames * 0.5);
-  const tapFrame = Math.max(revealFrame - 12, 10);
+  const hasCountdown = waitPeriodMs > 0;
+  const countdownStart = hasCountdown
+    ? Math.floor(waitPeriodMs / (1000 / fps))
+    : -1;
+  const countdownDuration = 150; // 5s at 30fps
+  const tapFrame = hasCountdown
+    ? countdownStart + countdownDuration
+    : Math.max(Math.floor(durationInFrames * 0.5) - 12, 10);
+  const revealFrame = hasCountdown
+    ? countdownStart + countdownDuration + 12
+    : Math.floor(durationInFrames * 0.5);
   const tapped = frame >= tapFrame;
   const correctRevealed = frame >= revealFrame;
   const isCorrectTap = simulatedTapIndex === correctIndex && tapped;
@@ -257,6 +270,11 @@ const QuizSegment: React.FC<{
     config: { damping: 18, stiffness: 120 },
     durationInFrames: 18,
   });
+
+  const countdownFrame = frame - countdownStart;
+  const countdownNumber = hasCountdown && countdownFrame >= 0 && countdownFrame < countdownDuration
+    ? 5 - Math.floor(countdownFrame / 30)
+    : null;
 
   const badgeScale = correctRevealed
     ? spring({
@@ -277,7 +295,7 @@ const QuizSegment: React.FC<{
     if (!tapped && !correctRevealed) return '#F3F4F6';
     if (correctRevealed && i === correctIndex) return '#DCFCE7';
     if (
-      (tapped && !correctRevealed && i === simulatedTapIndex) ||
+      (tapped && !correctRevealed && i === simulatedTapIndex && !isCorrectTap) ||
       (correctRevealed && i === simulatedTapIndex && !isCorrectTap)
     )
       return '#FEE2E2';
@@ -287,7 +305,7 @@ const QuizSegment: React.FC<{
   const getOptionBorder = (i: number) => {
     if (correctRevealed && i === correctIndex) return '#16a34a';
     if (
-      (tapped && !correctRevealed && i === simulatedTapIndex) ||
+      (tapped && !correctRevealed && i === simulatedTapIndex && !isCorrectTap) ||
       (correctRevealed && i === simulatedTapIndex && !isCorrectTap)
     )
       return '#FF3B30';
@@ -298,7 +316,7 @@ const QuizSegment: React.FC<{
     if (!tapped && !correctRevealed) return '#374151';
     if (correctRevealed && i === correctIndex) return '#16a34a';
     if (
-      (tapped && i === simulatedTapIndex) ||
+      (tapped && i === simulatedTapIndex && !isCorrectTap) ||
       (correctRevealed && i === simulatedTapIndex && !isCorrectTap)
     )
       return '#FF3B30';
@@ -309,7 +327,7 @@ const QuizSegment: React.FC<{
     if (!tapped && !correctRevealed) return '#374151';
     if (correctRevealed && i === correctIndex) return '#166534';
     if (
-      (tapped && i === simulatedTapIndex) ||
+      (tapped && i === simulatedTapIndex && !isCorrectTap) ||
       (correctRevealed && i === simulatedTapIndex && !isCorrectTap)
     )
       return '#991B1B';
@@ -333,6 +351,44 @@ const QuizSegment: React.FC<{
       </style>
 
       <Navbar title="quiz" />
+
+      {hasCountdown && countdownNumber !== null && (
+        <>
+          <Audio src={staticFile("assets/timer5s.mp3")} startFrom={countdownStart} />
+          <AbsoluteFill
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 30,
+              pointerEvents: 'none',
+            }}
+          >
+            <div
+              key={countdownNumber}
+              style={{
+                fontSize: 180,
+                fontWeight: 800,
+                fontFamily: '"Montserrat", "Inter", sans-serif',
+                color: '#F4CA4C',
+                textShadow: '0 0 60px rgba(244,202,76,0.4)',
+                transform: `scale(${spring({
+                  frame: countdownFrame % 30,
+                  fps: 30,
+                  config: { damping: 10, stiffness: 200 },
+                  durationInFrames: 10,
+                })})`,
+              }}
+            >
+              {countdownNumber}
+            </div>
+          </AbsoluteFill>
+        </>
+      )}
+
+      <Sequence from={revealFrame}>
+        <Audio src={staticFile("assets/correct.mp3")} />
+      </Sequence>
 
       {/* Progress bar */}
       <div
@@ -590,6 +646,7 @@ export const QuizComp: React.FC<{
     correctIndex: number;
     simulatedTapIndex: number;
     durationInFrames: number;
+    waitPeriodMs: number;
   }[];
 }> = ({ quizSequence = [] }) => {
   return (

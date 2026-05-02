@@ -36,6 +36,7 @@ The `Quiz` composition accepts a `quizSequence` array via `--props`. Each questi
 | `correctIndex` | number | yes | — | Index of correct option (0-3) |
 | `simulatedTapIndex` | number | no | -1 | Which option the simulated user taps (wrong tap creates red highlight; set to `correctIndex` for direct correct) |
 | `durationInFrames` | number | no | 180 | Duration per question in frames (30fps: 180 = 6s) |
+| `waitPeriodMs` | number | no | 0 | Delay in ms before simulated tap/reveal (0 = auto at 50% duration) |
 
 #### Full prop format:
 ```json
