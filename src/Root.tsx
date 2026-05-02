@@ -6,6 +6,7 @@ import { Logo, myCompSchema2 } from "./HelloWorld/Logo";
 import { DaniComp } from "./DaniComp";
 import { CarouselComp } from "./CarouselComp";
 import { NicStudyComp } from "./NicStudyComp";
+import { QuizComp } from "./QuizComp";
 
 // 1. Define the schema for the video sequence
 export const videoSequenceSchema = z.object({
@@ -65,6 +66,36 @@ export const nicstudySchema = z.object({
   tipsImage: z.string().optional(),
   ctaImage: z.string().optional(),
 });
+
+
+export const quizSchema = z.object({
+  quizSequence: z.array(
+    z.object({
+      question: z.string(),
+      options: z.array(z.string()),
+      correctIndex: z.number(),
+      simulatedTapIndex: z.number().optional().default(-1),
+      durationInFrames: z.number().optional().default(180),
+    })
+  ),
+});
+
+const defaultQuizSequence = [
+  {
+    question: "What is the capital of France?",
+    options: ["Berlin", "Madrid", "Paris", "Rome"],
+    correctIndex: 2,
+    simulatedTapIndex: 0,
+    durationInFrames: 180,
+  },
+  {
+    question: "Which planet is known as the Red Planet?",
+    options: ["Venus", "Mars", "Jupiter", "Saturn"],
+    correctIndex: 1,
+    simulatedTapIndex: 1,
+    durationInFrames: 180,
+  },
+];
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -148,7 +179,7 @@ export const RemotionRoot: React.FC = () => {
         calculateMetadata={async ({ props }) => {
           const sequence = props.carouselSequence || defaultCarouselSequence;
           
-          const durations = sequence.map(v => v.durationInFrames || 150);
+          const durations = sequence.map(v => v.durationInFrames || 180);
           const totalDuration = durations.reduce((a, b) => a + b, 0) || 150;
 
           return {
@@ -197,6 +228,34 @@ export const RemotionRoot: React.FC = () => {
           };
         }}
       />
+
+      <Composition
+        id="Quiz"
+        component={QuizComp}
+        fps={30}
+        width={1080}
+        height={1920}
+        schema={quizSchema}
+        defaultProps={{
+          quizSequence: defaultQuizSequence,
+        }}
+        calculateMetadata={async ({ props }) => {
+          const sequence = props.quizSequence || defaultQuizSequence;
+          const durations = sequence.map(v => v.durationInFrames || 180);
+          const totalDuration = durations.reduce((a, b) => a + b, 0) || 90;
+          return {
+            durationInFrames: totalDuration,
+            props: {
+              ...props,
+              quizSequence: sequence.map((v, i) => ({
+                ...v,
+                durationInFrames: durations[i]
+              }))
+            },
+          };
+        }}
+      />
     </>
   );
 };
+
