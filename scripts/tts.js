@@ -1,10 +1,12 @@
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 require("dotenv").config();
+const { execSync } = require("child_process");
 
 const TTS_URL = "https://api.deepinfra.com/v1/inference/Qwen/Qwen3-TTS";
 const API_KEY = process.env.DEEPINFRA_API_KEY;
-const OUTPUT_DIR = path.join(__dirname, "..", "public", "tts");
+const PUBLIC_DIR = path.join(__dirname, "..", "public");
 
 if (!API_KEY) {
   console.error("DEEPINFRA_API_KEY not found in .env");
@@ -20,19 +22,21 @@ async function generateTTS(text) {
     },
     body: JSON.stringify({ input: text }),
   });
-
   if (!res.ok) {
     const err = await res.text();
     throw new Error(`TTS API error ${res.status}: ${err}`);
   }
-
   const data = await res.json();
-  if (data.audio && data.audio.startsWith("data:")) {
-    const b64 = data.audio.split(",")[1];
-    return Buffer.from(b64, "base64");
-  }
+  const b64 = data.audio.split(",")[1];
+  return Buffer.from(b64, "base64");
+}
 
-  return Buffer.from(await res.arrayBuffer());
+function getAudioDurationMs(filepath) {
+  const out = execSync(
+    `ffprobe -v error -show_entries format=duration -of csv=p=0 "${filepath}"`,
+    { encoding: "utf-8" }
+  );
+  return Math.ceil(parseFloat(out.trim()) * 1000);
 }
 
 async function main() {
@@ -45,25 +49,38 @@ async function main() {
   const data = JSON.parse(fs.readFileSync(inputFile, "utf-8"));
   const questions = data.quizSequence || [];
 
-  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+  // Use existing sessionId from JSON, or generate a new one
+  const sessionId = data.sessionId || crypto.randomUUID();
+  data.sessionId = sessionId;
+  const outputDir = path.join(PUBLIC_DIR, "tts", sessionId);
+  fs.mkdirSync(outputDir, { recursive: true });
 
   for (let i = 0; i < questions.length; i++) {
     const q = questions[i];
     const text = q.question;
-    const filename = `question_${i}.mp3`;
-    const filepath = path.join(OUTPUT_DIR, filename);
+    const filename = `question_${i}.wav`;
+    const filepath = path.join(outputDir, filename);
 
-    console.log(`[${i + 1}/${questions.length}] TTS: "${text}"`);
-    const audio = await generateTTS(text);
-    fs.writeFileSync(filepath, audio);
-    console.log(`  Saved: public/tts/${filename} (${audio.length} bytes)`);
+    if (fs.existsSync(filepath)) {
+      console.log(`[${i + 1}/${questions.length}] SKIP (cached): ${text}`);
+    } else {
+      console.log(`[${i + 1}/${questions.length}] TTS: ${text}`);
+      const audio = await generateTTS(text);
+      fs.writeFileSync(filepath, audio);
+      console.log(`  Saved: public/tts/${sessionId}/${filename} (${audio.length} bytes)`);
+    }
 
-    // Update JSON with audioSrc
-    q.audioSrc = `tts/${filename}`;
+    const durationMs = getAudioDurationMs(filepath);
+    const durationFrames = Math.ceil((durationMs / 1000) * 30);
+    console.log(`  Duration: ${durationMs}ms (${durationFrames}f)`);
+
+    q.audioSrc = `tts/${sessionId}/${filename}`;
+    q.waitPeriodMs = durationMs;
+    q.durationInFrames = durationFrames + 180 + 30;
   }
 
   fs.writeFileSync(inputFile, JSON.stringify(data, null, 2));
-  console.log(`\nUpdated ${inputFile} with audioSrc fields`);
+  console.log(`\nUpdated ${inputFile} (session: ${sessionId})`);
 }
 
 main().catch((err) => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import {
   AbsoluteFill,
   staticFile,
@@ -8,8 +8,6 @@ import {
   interpolate,
   Audio,
   Sequence,
-  delayRender,
-  continueRender,
 } from 'remotion';
 import {
   Book,
@@ -228,65 +226,6 @@ const Navbar: React.FC<{ title: string }> = ({ title }) => (
 
 // ============================================================
 
-// ============================================================
-// TTSPlayer — fetches audio from DeepInfra during render
-// ============================================================
-const API_KEY = process.env.DEEPINFRA_API_KEY as string;
-
-const TTSPlayer: React.FC<{
-  question: string;
-  questionIndex: number;
-  onReady: (durationMs: number) => void;
-}> = ({ question, questionIndex, onReady }) => {
-  const [audioSrc, setAudioSrc] = useState<string | null>(null);
-  const retryRef = useRef(0);
-
-  useEffect(() => {
-    let cancelled = false;
-    const handle = delayRender(`tts-q${questionIndex}`);
-
-    const fetchTTS = async () => {
-      try {
-        const res = await fetch("https://api.deepinfra.com/v1/inference/Qwen/Qwen3-TTS", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ input: question }),
-        });
-        if (!res.ok) throw new Error(`TTS ${res.status}`);
-        const blob = await res.blob();
-        if (cancelled) return;
-        const url = URL.createObjectURL(blob);
-        const audio = new window.Audio();
-        audio.src = url;
-        audio.addEventListener("loadedmetadata", () => {
-          if (cancelled) return;
-          const durMs = Math.ceil(audio.duration * 1000);
-          onReady(durMs);
-          setAudioSrc(url);
-          continueRender(handle);
-        });
-        audio.load();
-      } catch (e) {
-        if (cancelled) return;
-        retryRef.current++;
-        if (retryRef.current < 3) {
-          setTimeout(() => fetchTTS(), 1000 * retryRef.current);
-        } else {
-          continueRender(handle);
-        }
-      }
-    };
-
-    fetchTTS();
-    return () => { cancelled = true; };
-  });
-
-  return audioSrc ? <Audio src={audioSrc} /> : null;
-};
-
 // QuizSegment
 // ============================================================
 const QuizSegment: React.FC<{
@@ -313,12 +252,9 @@ const QuizSegment: React.FC<{
   const frame = useCurrentFrame();
   const fps = 30;
 
-  const [ttsDurationMs, setTtsDurationMs] = useState(0);
-  const effectiveWaitMs = ttsDurationMs > 0 ? ttsDurationMs : waitPeriodMs;
-
-  const hasCountdown = effectiveWaitMs > 0;
+  const hasCountdown = waitPeriodMs > 0;
   const countdownStart = hasCountdown
-    ? Math.floor(effectiveWaitMs / (1000 / fps))
+    ? Math.floor(waitPeriodMs / (1000 / fps))
     : -1;
   const countdownDuration = 150; // 5s at 30fps
   const tapFrame = hasCountdown
@@ -419,11 +355,7 @@ const QuizSegment: React.FC<{
 
       <Navbar title="quiz" />
 
-      {audioSrc ? (
-        <Audio src={staticFile(audioSrc)} />
-      ) : (
-        <TTSPlayer question={question} questionIndex={questionIndex} onReady={setTtsDurationMs} />
-      )}
+      {audioSrc && <Audio src={staticFile(audioSrc)} />}
 
       {hasCountdown && countdownNumber !== null && (
         <>

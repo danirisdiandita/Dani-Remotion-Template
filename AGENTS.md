@@ -62,3 +62,37 @@ npx remotion render Quiz out/quiz.mp4 --props='{"quizSequence":[{"question":"Wha
 ```
 npx remotion render Quiz out/quiz.mp4 --props=./props/quiz.json
 ```
+
+### Quiz Programmatic Workflow
+
+**Step 1**: Create a minimal quiz JSON (only questions & answers):
+```json
+{
+  "quizSequence": [
+    {
+      "question": "What is 2+2?",
+      "options": ["3", "4", "5", "6"],
+      "correctIndex": 1,
+      "simulatedTapIndex": 1
+    }
+  ]
+}
+```
+All other fields (`durationInFrames`, `waitPeriodMs`, `audioSrc`) are auto-generated.
+
+**Step 2**: Generate TTS audio with DeepInfra:
+```
+node scripts/tts.js scripts/sample/minimal.json
+```
+This:
+- Calls Qwen3-TTS for each question
+- Saves audio to `public/tts/question_N.mp3`
+- Measures duration via ffprobe
+- Updates JSON with `audioSrc`, `waitPeriodMs`, `durationInFrames`
+
+**Step 3**: Render:
+```
+npx remotion render Quiz out/quiz.mp4 --props=./scripts/sample/minimal.json
+```
+
+Each question follows: TTS reads question → 5s countdown (with timer.mp3) → answer reveal (correct.mp3).

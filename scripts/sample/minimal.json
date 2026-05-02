@@ -1,0 +1,47 @@
+{
+  "quizSequence": [
+    {
+      "question": "What is 2+2?",
+      "options": [
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "correctIndex": 1,
+      "simulatedTapIndex": 1,
+      "audioSrc": "tts/7b53ada2-9268-4927-8e80-a9b72f720578/question_0.wav",
+      "waitPeriodMs": 2320,
+      "durationInFrames": 280
+    },
+    {
+      "question": "What is the capital of Japan?",
+      "options": [
+        "Beijing",
+        "Seoul",
+        "Tokyo",
+        "Bangkok"
+      ],
+      "correctIndex": 2,
+      "simulatedTapIndex": 2,
+      "audioSrc": "tts/7b53ada2-9268-4927-8e80-a9b72f720578/question_1.wav",
+      "waitPeriodMs": 2240,
+      "durationInFrames": 278
+    },
+    {
+      "question": "How many days in a leap year?",
+      "options": [
+        "364",
+        "365",
+        "366",
+        "367"
+      ],
+      "correctIndex": 2,
+      "simulatedTapIndex": 2,
+      "audioSrc": "tts/7b53ada2-9268-4927-8e80-a9b72f720578/question_2.wav",
+      "waitPeriodMs": 2320,
+      "durationInFrames": 280
+    }
+  ],
+  "sessionId": "7b53ada2-9268-4927-8e80-a9b72f720578"
+}
