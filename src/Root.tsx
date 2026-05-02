@@ -77,6 +77,7 @@ export const quizSchema = z.object({
       simulatedTapIndex: z.number().optional().default(-1),
       durationInFrames: z.number().optional().default(180),
       waitPeriodMs: z.number().optional().default(0),
+      audioSrc: z.string().optional().default(""),
     })
   ),
 });

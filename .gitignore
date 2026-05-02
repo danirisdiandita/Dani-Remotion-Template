@@ -12,3 +12,4 @@ build
 /generated/prisma
 /public/tmp
 /tmp
+/public/tts

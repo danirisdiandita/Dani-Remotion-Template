@@ -10,8 +10,9 @@
       ],
       "correctIndex": 2,
       "simulatedTapIndex": 2,
-      "durationInFrames": 210,
-      "waitPeriodMs": 500
+      "durationInFrames": 284,
+      "waitPeriodMs": 2480,
+      "audioSrc": "tts/question_0.mp3"
     },
     {
       "question": "Which planet is known as the Red Planet?",
@@ -23,8 +24,9 @@
       ],
       "correctIndex": 1,
       "simulatedTapIndex": 1,
-      "durationInFrames": 210,
-      "waitPeriodMs": 500
+      "durationInFrames": 315,
+      "waitPeriodMs": 3520,
+      "audioSrc": "tts/question_1.mp3"
     },
     {
       "question": "How many continents are there on Earth?",
@@ -36,8 +38,9 @@
       ],
       "correctIndex": 2,
       "simulatedTapIndex": 2,
-      "durationInFrames": 210,
-      "waitPeriodMs": 500
+      "durationInFrames": 291,
+      "waitPeriodMs": 2720,
+      "audioSrc": "tts/question_2.mp3"
     },
     {
       "question": "What is the chemical symbol for water?",
@@ -49,8 +52,9 @@
       ],
       "correctIndex": 1,
       "simulatedTapIndex": 1,
-      "durationInFrames": 210,
-      "waitPeriodMs": 500
+      "durationInFrames": 282,
+      "waitPeriodMs": 2400,
+      "audioSrc": "tts/question_3.mp3"
     },
     {
       "question": "Who painted the Mona Lisa?",
@@ -62,8 +66,9 @@
       ],
       "correctIndex": 3,
       "simulatedTapIndex": 3,
-      "durationInFrames": 210,
-      "waitPeriodMs": 500
+      "durationInFrames": 274,
+      "waitPeriodMs": 2160,
+      "audioSrc": "tts/question_4.mp3"
     }
   ]
 }
