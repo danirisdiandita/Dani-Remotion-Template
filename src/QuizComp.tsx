@@ -679,6 +679,118 @@ const QuizSegment: React.FC<{
   );
 };
 
+
+// ============================================================
+// QuizIntro — loading screen before questions start
+// ============================================================
+const QuizIntro: React.FC<{ totalQuestions: number }> = ({ totalQuestions }) => {
+  const frame = useCurrentFrame();
+
+  // Text fade and slide up
+  const textOpacity = interpolate(frame, [15, 35], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+  const textY = interpolate(frame, [15, 35], [20, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+
+  const dots = Math.floor(frame / 15) % 4;
+  const loaderDots = ".".repeat(dots);
+
+  return (
+    <AbsoluteFill style={{ 
+      background: 'linear-gradient(135deg, #F8FAFC 0%, #E2E8F0 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexDirection: 'column',
+      gap: 72,
+    }}>
+      
+      {/* Decorative background blurs */}
+      <div style={{
+        position: 'absolute',
+        width: 700,
+        height: 700,
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(228,246,169,0.5) 0%, rgba(228,246,169,0) 70%)',
+        filter: 'blur(50px)',
+      }} />
+
+      <div
+        style={{
+          position: 'relative',
+          width: 520,
+          height: 180,
+        }}
+      >
+        {/* Glowing border/backdrop */}
+        <div style={{
+          position: 'absolute',
+          inset: -8,
+          borderRadius: 48,
+          background: `linear-gradient(45deg, #e4f6a9, #a3f6a9, #e4f6a9, #f6e4a9)`,
+          filter: 'blur(16px)',
+          opacity: 0.85,
+        }} />
+        
+        {/* Main Logo Card */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: 40,
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(20px)',
+            border: '2px solid rgba(255,255,255,1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 30px 60px rgba(0,0,0,0.12), inset 0 -4px 20px rgba(0,0,0,0.03), inset 0 4px 20px rgba(255,255,255,1)',
+          }}
+        >
+          <img
+            src={staticFile("assets/notesparkai.png")}
+            style={{
+              width: 440,
+              height: 120,
+              objectFit: 'contain',
+            }}
+          />
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          opacity: textOpacity,
+          transform: `translateY(${textY}px)`,
+          zIndex: 10,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 48,
+            fontWeight: '800',
+            fontFamily: '"Montserrat", "Inter", sans-serif',
+            color: '#0F172A',
+            letterSpacing: '-0.03em',
+            textAlign: 'center',
+            textShadow: '0 4px 12px rgba(0,0,0,0.05)',
+            display: 'flex',
+            alignItems: 'center',
+            background: 'linear-gradient(135deg, #0F172A 0%, #334155 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            padding: '10px 20px',
+          }}
+        >
+          is preparing your questions
+          <span style={{ width: 40, textAlign: 'left', display: 'inline-block', WebkitTextFillColor: '#0F172A' }}>{loaderDots}</span>
+        </div>
+      </div>
+    </AbsoluteFill>
+  );
+};
+
 // ============================================================
 // QuizComp — series wrapper
 // ============================================================
@@ -695,6 +807,9 @@ export const QuizComp: React.FC<{
 }> = ({ quizSequence = [] }) => {
   return (
     <Series>
+      <Series.Sequence durationInFrames={45}>
+        <QuizIntro totalQuestions={quizSequence.length} />
+      </Series.Sequence>
       {quizSequence.map((segment, index) => (
         <Series.Sequence
           key={index}
