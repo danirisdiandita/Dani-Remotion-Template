@@ -358,29 +358,67 @@ const QuizSegment: React.FC<{
           <AbsoluteFill
             style={{
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              alignItems: 'flex-end',
+              justifyContent: 'flex-end',
               zIndex: 30,
               pointerEvents: 'none',
+              padding: '0 110px 280px 0',
             }}
           >
             <div
-              key={countdownNumber}
               style={{
-                fontSize: 180,
-                fontWeight: 800,
-                fontFamily: '"Montserrat", "Inter", sans-serif',
-                color: '#F4CA4C',
-                textShadow: '0 0 60px rgba(244,202,76,0.4)',
-                transform: `scale(${spring({
-                  frame: countdownFrame % 30,
-                  fps: 30,
-                  config: { damping: 10, stiffness: 200 },
-                  durationInFrames: 10,
-                })})`,
+                position: 'relative',
+                width: 220,
+                height: 220,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              {countdownNumber}
+              <svg
+                width="220"
+                height="220"
+                style={{ position: 'absolute', transform: 'rotate(-90deg)' }}
+              >
+                <circle
+                  cx="110"
+                  cy="110"
+                  r="100"
+                  fill="none"
+                  stroke="#e5e7eb"
+                  strokeWidth="10"
+                />
+                <circle
+                  cx="110"
+                  cy="110"
+                  r="100"
+                  fill="none"
+                  stroke="#000"
+                  strokeWidth="10"
+                  strokeLinecap="round"
+                  strokeDasharray={2 * Math.PI * 100}
+                  strokeDashoffset={2 * Math.PI * 100 * (1 - ((countdownFrame % 30) / 30))}
+                  style={{ transition: 'stroke-dashoffset 0.1s linear' }}
+                />
+              </svg>
+              <div
+                key={countdownNumber}
+                style={{
+                  fontSize: 150,
+                  fontWeight: 800,
+                  fontFamily: '"Montserrat", "Inter", sans-serif',
+                  color: '#000',
+                  lineHeight: 1,
+                  transform: `scale(${spring({
+                    frame: countdownFrame % 30,
+                    fps: 30,
+                    config: { damping: 10, stiffness: 200 },
+                    durationInFrames: 10,
+                  })})`,
+                }}
+              >
+                {countdownNumber}
+              </div>
             </div>
           </AbsoluteFill>
         </>
