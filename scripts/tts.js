@@ -55,6 +55,22 @@ async function main() {
   const outputDir = path.join(PUBLIC_DIR, "tts", sessionId);
   fs.mkdirSync(outputDir, { recursive: true });
 
+  if (data.hook) {
+    const hookFilename = "hook.wav";
+    const hookFilepath = path.join(outputDir, hookFilename);
+    if (!fs.existsSync(hookFilepath)) {
+      console.log(`[HOOK] TTS: "${data.hook}"`);
+      const audio = await generateTTS(data.hook);
+      fs.writeFileSync(hookFilepath, audio);
+      console.log(`  Saved: public/tts/${sessionId}/${hookFilename} (${audio.length} bytes)`);
+    } else {
+      console.log(`[HOOK] SKIP (cached): "${data.hook}"`);
+    }
+    const hookDurationMs = getAudioDurationMs(hookFilepath);
+    data.hookAudioSrc = `tts/${sessionId}/${hookFilename}`;
+    data.hookDurationInFrames = Math.ceil((hookDurationMs / 1000) * 30) + 30; // 1s buffer
+  }
+
   for (let i = 0; i < questions.length; i++) {
     const q = questions[i];
     const text = q.question;

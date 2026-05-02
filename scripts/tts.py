@@ -23,6 +23,64 @@ questions = data.get("quizSequence", [])
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+if "hook" in data and data["hook"]:
+    hook_text = data["hook"]
+    hook_filename = "hook.mp3"
+    hook_filepath = OUTPUT_DIR / hook_filename
+    
+    if hook_filepath.exists():
+        with open(hook_filepath, "rb") as f:
+            start = f.read(20)
+            if start.startswith(b'{"input_'):
+                hook_filepath.unlink()
+                
+    if hook_filepath.exists():
+        print(f"[HOOK] SKIP (cached): {hook_text}")
+    else:
+        print(f"[HOOK] TTS: {hook_text}")
+        resp = requests.post(TTS_URL,
+            json={"input": hook_text},
+            headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
+            timeout=60
+        )
+        if resp.status_code != 200:
+            print(f"  ERROR: {resp.status_code} {resp.text}")
+            sys.exit(1)
+        
+        try:
+            resp_json = resp.json()
+            if "audio" in resp_json:
+                audio_uri = resp_json["audio"]
+                if "," in audio_uri:
+                    _, b64 = audio_uri.split(",", 1)
+                    hook_filepath.write_bytes(base64.b64decode(b64))
+                else:
+                    hook_filepath.write_bytes(resp.content)
+            else:
+                hook_filepath.write_bytes(resp.content)
+        except:
+            hook_filepath.write_bytes(resp.content)
+            
+    result = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(hook_filepath)],
+        capture_output=True, text=True
+    )
+    duration_out = result.stdout.strip()
+    if not duration_out or duration_out == "N/A":
+        result = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries", "stream=duration", "-of", "csv=p=0", str(hook_filepath)],
+            capture_output=True, text=True
+        )
+        duration_out = result.stdout.strip()
+
+    try:
+        duration_s = float(duration_out)
+    except (ValueError, TypeError):
+        duration_s = 3.0
+    
+    data["hookAudioSrc"] = f"tts/{hook_filename}"
+    data["hookDurationInFrames"] = int(duration_s * 30) + 30 # Add 1s buffer
+
 for i, q in enumerate(questions):
     text = q["question"]
     filename = f"question_{i}.mp3"

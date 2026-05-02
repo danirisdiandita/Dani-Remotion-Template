@@ -683,25 +683,65 @@ const QuizSegment: React.FC<{
 // ============================================================
 // QuizIntro — loading screen before questions start
 // ============================================================
+// ============================================================
+// QuizHookIntro — hook text display before the intro
+// ============================================================
+const QuizHookIntro: React.FC<{ hook: string; hookAudioSrc?: string }> = ({ hook, hookAudioSrc }) => {
+  return (
+    <AbsoluteFill style={{ 
+      background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #e2e8f0 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexDirection: 'column',
+    }}>
+      {hookAudioSrc && <Audio src={staticFile(hookAudioSrc)} />}
+      <div
+        style={{
+          fontSize: 64,
+          fontWeight: '900',
+          fontFamily: '"Montserrat", "Inter", sans-serif',
+          color: '#0F172A',
+          letterSpacing: '-0.04em',
+          textAlign: 'center',
+          textShadow: '0 4px 12px rgba(0,0,0,0.05)',
+          lineHeight: 1.2,
+          padding: '0 60px',
+        }}
+      >
+        {hook}
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+// ============================================================
+// QuizIntro — loading screen before questions start
+// ============================================================
 const QuizIntro: React.FC<{ totalQuestions: number }> = ({ totalQuestions }) => {
   const frame = useCurrentFrame();
 
+  // Logo fade and slide up
+  const logoOpacity = interpolate(frame, [10, 25], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+  const logoY = interpolate(frame, [10, 25], [20, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+
   // Text fade and slide up
-  const textOpacity = interpolate(frame, [15, 35], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
-  const textY = interpolate(frame, [15, 35], [20, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+  const textOpacity = interpolate(frame, [20, 40], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+  const textY = interpolate(frame, [20, 40], [20, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
 
   const dots = Math.floor(frame / 15) % 4;
   const loaderDots = ".".repeat(dots);
 
   return (
     <AbsoluteFill style={{ 
-      background: 'linear-gradient(135deg, #F8FAFC 0%, #E2E8F0 100%)',
+      background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #e2e8f0 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       flexDirection: 'column',
       gap: 72,
     }}>
+
       
       {/* Decorative background blurs */}
       <div style={{
@@ -718,6 +758,8 @@ const QuizIntro: React.FC<{ totalQuestions: number }> = ({ totalQuestions }) => 
           position: 'relative',
           width: 520,
           height: 180,
+          opacity: logoOpacity,
+          transform: `translateY(${logoY}px)`,
         }}
       >
         {/* Glowing border/backdrop */}
@@ -771,20 +813,20 @@ const QuizIntro: React.FC<{ totalQuestions: number }> = ({ totalQuestions }) => 
             fontSize: 48,
             fontWeight: '800',
             fontFamily: '"Montserrat", "Inter", sans-serif',
-            color: '#0F172A',
+            color: '#475569',
             letterSpacing: '-0.03em',
             textAlign: 'center',
             textShadow: '0 4px 12px rgba(0,0,0,0.05)',
             display: 'flex',
             alignItems: 'center',
-            background: 'linear-gradient(135deg, #0F172A 0%, #334155 100%)',
+            background: 'linear-gradient(135deg, #475569 0%, #64748B 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             padding: '10px 20px',
           }}
         >
           is preparing your questions
-          <span style={{ width: 40, textAlign: 'left', display: 'inline-block', WebkitTextFillColor: '#0F172A' }}>{loaderDots}</span>
+          <span style={{ width: 40, textAlign: 'left', display: 'inline-block', WebkitTextFillColor: '#475569' }}>{loaderDots}</span>
         </div>
       </div>
     </AbsoluteFill>
@@ -795,6 +837,9 @@ const QuizIntro: React.FC<{ totalQuestions: number }> = ({ totalQuestions }) => 
 // QuizComp — series wrapper
 // ============================================================
 export const QuizComp: React.FC<{
+  hook?: string;
+  hookAudioSrc?: string;
+  hookDurationInFrames?: number;
   quizSequence?: {
     question: string;
     options: string[];
@@ -804,9 +849,15 @@ export const QuizComp: React.FC<{
     waitPeriodMs: number;
     audioSrc: string;
   }[];
-}> = ({ quizSequence = [] }) => {
+}> = ({ quizSequence = [], hook, hookAudioSrc, hookDurationInFrames }) => {
+
   return (
     <Series>
+      {hook && hookDurationInFrames ? (
+        <Series.Sequence durationInFrames={hookDurationInFrames}>
+          <QuizHookIntro hook={hook} hookAudioSrc={hookAudioSrc} />
+        </Series.Sequence>
+      ) : null}
       <Series.Sequence durationInFrames={45}>
         <QuizIntro totalQuestions={quizSequence.length} />
       </Series.Sequence>

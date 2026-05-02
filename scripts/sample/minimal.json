@@ -1,4 +1,5 @@
 {
+  "hook": "Only 5% of people get all of these right 👇",
   "quizSequence": [
     {
       "question": "What is 2+2?",
@@ -11,8 +12,8 @@
       "correctIndex": 1,
       "simulatedTapIndex": 1,
       "audioSrc": "tts/7b53ada2-9268-4927-8e80-a9b72f720578/question_0.wav",
-      "waitPeriodMs": 2320,
-      "durationInFrames": 280
+      "waitPeriodMs": 2000,
+      "durationInFrames": 270
     },
     {
       "question": "What is the capital of Japan?",
@@ -25,11 +26,11 @@
       "correctIndex": 2,
       "simulatedTapIndex": 2,
       "audioSrc": "tts/7b53ada2-9268-4927-8e80-a9b72f720578/question_1.wav",
-      "waitPeriodMs": 2240,
-      "durationInFrames": 278
+      "waitPeriodMs": 2560,
+      "durationInFrames": 287
     },
     {
-      "question": "How many days in a leap year?",
+      "question": "How many days are in a leap year?",
       "options": [
         "364",
         "365",
@@ -39,9 +40,11 @@
       "correctIndex": 2,
       "simulatedTapIndex": 2,
       "audioSrc": "tts/7b53ada2-9268-4927-8e80-a9b72f720578/question_2.wav",
-      "waitPeriodMs": 2320,
-      "durationInFrames": 280
+      "waitPeriodMs": 2960,
+      "durationInFrames": 299
     }
   ],
-  "sessionId": "7b53ada2-9268-4927-8e80-a9b72f720578"
+  "sessionId": "7b53ada2-9268-4927-8e80-a9b72f720578",
+  "hookAudioSrc": "tts/7b53ada2-9268-4927-8e80-a9b72f720578/hook.wav",
+  "hookDurationInFrames": 134
 }

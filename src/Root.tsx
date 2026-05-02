@@ -69,6 +69,9 @@ export const nicstudySchema = z.object({
 
 
 export const quizSchema = z.object({
+  hook: z.string().optional(),
+  hookAudioSrc: z.string().optional(),
+  hookDurationInFrames: z.number().optional(),
   quizSequence: z.array(
     z.object({
       question: z.string(),
@@ -246,7 +249,13 @@ export const RemotionRoot: React.FC = () => {
         calculateMetadata={async ({ props }) => {
           const sequence = props.quizSequence || defaultQuizSequence;
           const durations = sequence.map(v => v.durationInFrames || 180);
-          const totalDuration = durations.reduce((a, b) => a + b, 0) || 90;
+          const sequenceDuration = durations.reduce((a, b) => a + b, 0) || 90;
+          
+          // @ts-ignore
+          const hookDuration = props.hookDurationInFrames || 0;
+          const introDuration = 45;
+          const totalDuration = sequenceDuration + hookDuration + introDuration;
+          
           return {
             durationInFrames: totalDuration,
             props: {
