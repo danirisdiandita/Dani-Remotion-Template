@@ -25,13 +25,41 @@ interface BulkRenderDialogProps {
 export function BulkRenderDialog({ projectId, projectName, compositionType }: BulkRenderDialogProps) {
   const [open, setOpen] = useState(false);
   const [jsonInput, setJsonInput] = useState("");
+  const [textInput, setTextInput] = useState("");
+  const [activeTab, setActiveTab] = useState("text");
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleBatchStart = async () => {
     try {
-      const data = JSON.parse(jsonInput);
-      if (!Array.isArray(data)) {
-        throw new Error("Input must be a JSON array of sequences");
+      let data: any[] = [];
+      
+      if (activeTab === "text") {
+        const lines = textInput.split("\n").filter(line => line.trim().length > 0);
+        if (lines.length === 0) {
+          throw new Error("Please enter at least one line of text");
+        }
+        
+        data = lines.map(line => {
+          if (compositionType === 'nicstudy') {
+            const parts = line.split("|").map(s => s.trim());
+            return {
+              title: parts[0],
+              tips: parts.length > 1 ? parts.slice(1) : [parts[0]],
+              handle: "@study"
+            };
+          } else {
+            const slides = line.split("|").map(s => ({ text: s.trim() }));
+            return {
+              caption: slides[0].text,
+              videoSequence: slides
+            };
+          }
+        });
+      } else {
+        data = JSON.parse(jsonInput);
+        if (!Array.isArray(data)) {
+          throw new Error("Input must be a JSON array of sequences");
+        }
       }
 
       setIsProcessing(true);
@@ -48,6 +76,9 @@ export function BulkRenderDialog({ projectId, projectName, compositionType }: Bu
         } else {
           // For Dani/Carousel, we used videoSequence key
           payload.videoSequence = item.videoSequence || item;
+          if (item.caption) {
+            payload.caption = item.caption;
+          }
         }
 
         const res = await fetch("/api/render/async", {
@@ -80,7 +111,8 @@ export function BulkRenderDialog({ projectId, projectName, compositionType }: Bu
   {
     "title": "Study Tip #1",
     "tips": ["Tip A", "Tip B"],
-    "handle": "@study"
+    "handle": "@study",
+    "caption": "Check out this study tip! #study"
   },
   {
     "title": "Study Tip #2",
@@ -91,6 +123,7 @@ export function BulkRenderDialog({ projectId, projectName, compositionType }: Bu
     }
     return `[
   {
+    "caption": "This is an optional custom caption for this render",
     "videoSequence": [
       { "text": "Slide 1 text" },
       { "text": "Slide 2 text" }
@@ -111,12 +144,13 @@ export function BulkRenderDialog({ projectId, projectName, compositionType }: Bu
         <span className="hidden sm:inline font-bold text-xs">Bulk Render</span>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[700px] gap-0 p-0 overflow-hidden">
-        <Tabs defaultValue="editor" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="px-6 pt-6 pb-4 border-b bg-muted/30">
             <div className="flex items-center justify-between mb-2">
               <DialogTitle className="text-xl">Bulk Video Generation</DialogTitle>
               <TabsList className="h-8">
-                <TabsTrigger value="editor" className="text-[10px] uppercase font-bold tracking-wider">Editor</TabsTrigger>
+                <TabsTrigger value="text" className="text-[10px] uppercase font-bold tracking-wider">Text</TabsTrigger>
+                <TabsTrigger value="editor" className="text-[10px] uppercase font-bold tracking-wider">JSON</TabsTrigger>
                 <TabsTrigger value="guide" className="text-[10px] uppercase font-bold tracking-wider">Guide</TabsTrigger>
               </TabsList>
             </div>
@@ -126,6 +160,27 @@ export function BulkRenderDialog({ projectId, projectName, compositionType }: Bu
           </div>
 
           <div className="p-6">
+            <TabsContent value="text" className="mt-0 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="bulk-text" className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-2">
+                  <Play className="size-3 fill-current" /> Text Lines Input
+                </Label>
+                <Textarea
+                  id="bulk-text"
+                  placeholder={compositionType === 'nicstudy' ? "Title | Tip 1 | Tip 2\nAnother Title | Tip A" : "Slide 1 text | Slide 2 text\nAnother video text..."}
+                  className="font-mono text-xs min-h-[350px] bg-muted/20 border-border/50 focus:border-primary/50 transition-colors whitespace-pre-wrap"
+                  value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
+                />
+                <div className="flex items-center gap-2 p-2 rounded bg-blue-500/5 border border-blue-500/10">
+                  <Info className="size-3.5 text-blue-500 shrink-0" />
+                  <p className="text-[10px] text-blue-600 font-medium">
+                    Each line creates one complete video. Use a pipe symbol (|) to separate multiple slides.
+                  </p>
+                </div>
+              </div>
+            </TabsContent>
+
             <TabsContent value="editor" className="mt-0 space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="bulk-json" className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-2">
@@ -158,8 +213,8 @@ export function BulkRenderDialog({ projectId, projectName, compositionType }: Bu
                   <ul className="text-xs text-muted-foreground space-y-2 ml-4 list-disc">
                     <li>This tool queues multiple render tasks in the background.</li>
                     <li>You provide an <strong>Array of Objects</strong>. Each object corresponds to one video.</li>
-                    <li>For <span className="text-foreground font-bold">Dani (Video)</span> and <span className="text-foreground font-bold">Carousel</span>, use the <code>videoSequence</code> key.</li>
-                    <li>For <span className="text-foreground font-bold">Nic Study</span>, use keys like <code>title</code>, <code>tips</code> (array), and <code>handle</code>.</li>
+                    <li>For <span className="text-foreground font-bold">Dani (Video)</span> and <span className="text-foreground font-bold">Carousel</span>, use the <code>videoSequence</code> key. You can also include a <code>caption</code> key.</li>
+                    <li>For <span className="text-foreground font-bold">Nic Study</span>, use keys like <code>title</code>, <code>tips</code> (array), <code>handle</code>, and optionally <code>caption</code>.</li>
                   </ul>
                 </section>
 
@@ -188,13 +243,13 @@ export function BulkRenderDialog({ projectId, projectName, compositionType }: Bu
             <DialogFooter>
               <Button
                 onClick={handleBatchStart}
-                disabled={isProcessing || !jsonInput}
+                disabled={isProcessing || (activeTab === 'editor' && !jsonInput) || (activeTab === 'text' && !textInput)}
                 className="w-full h-11 shadow-lg shadow-primary/20"
               >
                 {isProcessing ? (
                   <>
                     <Loader2 className="mr-2 size-4 animate-spin" />
-                    Queueing {jsonInput ? JSON.parse(jsonInput).length : 0} Renders...
+                    Queueing Renders...
                   </>
                 ) : (
                   <>
