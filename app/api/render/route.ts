@@ -8,7 +8,7 @@ import { randomUUID } from "crypto";
 
 export async function POST(req: Request) {
   try {
-    const { projectId, videoSequence: overrideSequence } = await req.json();
+    const { projectId, videoSequence: overrideSequence, caption: overrideCaption } = await req.json();
     if (!projectId) {
       throw new Error("Missing projectId in request");
     }
@@ -60,8 +60,12 @@ export async function POST(req: Request) {
         const videoAssets = comp.assets.filter((a: any) => a.asset.type === 'video');
         const texts = comp.overlayTexts;
 
-        if (videoAssets.length === 0 || texts.length === 0) {
-          throw new Error(`Composition index ${i} is missing assets or texts.`);
+        if (!s3Key && videoAssets.length === 0) {
+          throw new Error(`Composition index ${i} is missing background video assets.`);
+        }
+
+        if (!overlayText && texts.length === 0) {
+          throw new Error(`Composition index ${i} is missing overlay texts.`);
         }
 
         if (!s3Key) {
@@ -147,7 +151,7 @@ export async function POST(req: Request) {
         userId: project.userId,
         projectId: project.id,
         s3Key: s3Key,
-        caption: project.caption,
+        caption: overrideCaption !== undefined ? overrideCaption : project.caption,
         status: "completed"
       }
     });
