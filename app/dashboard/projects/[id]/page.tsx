@@ -18,7 +18,8 @@ import {
   ArrowLeft,
   Sparkles,
   Save,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Eye
 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -94,6 +95,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const isNicstudy = (project as any)?.compositionType === 'nicstudy';
 
   const [localComps, setLocalComps] = useState<any[]>([]);
+  const [rendersData, setRendersData] = useState<any[]>([]);
+  const [viewRendersOpen, setViewRendersOpen] = useState(false);
+  const [rendersLoading, setRendersLoading] = useState(false);
+  const [downloadingLatest, setDownloadingLatest] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   // Browser Storage Persistence
   useEffect(() => {
@@ -168,6 +174,44 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       // Persist to DB
       const items = newComps.map((item, index) => ({ id: item.id, order: index }));
       reorderComps(items);
+    }
+  };
+
+  const handleViewRenders = async () => {
+    setRendersLoading(true);
+    try {
+      const res = await fetch(`/api/projects/${projectId}/renders`);
+      if (!res.ok) throw new Error("Failed to fetch renders");
+      const data = await res.json();
+      setRendersData(data);
+      setViewRendersOpen(true);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to load renders");
+    } finally {
+      setRendersLoading(false);
+    }
+  };
+
+  const handleDownloadLatest = async () => {
+    setDownloadingLatest(true);
+    try {
+      const res = await fetch(`/api/projects/${projectId}/renders`);
+      if (!res.ok) throw new Error("Failed to fetch renders");
+      const renders = await res.json();
+      const completed = renders.filter((r: any) => r.status === "completed");
+      if (completed.length === 0) {
+        toast.error("No completed renders found");
+        return;
+      }
+      const latest = completed[0];
+      const urlRes = await fetch(`/api/renders/${latest.id}/url`);
+      if (!urlRes.ok) throw new Error("Failed to get download URL");
+      const { downloadUrl } = await urlRes.json();
+      window.location.href = downloadUrl;
+    } catch (err: any) {
+      toast.error(err.message || "Download failed");
+    } finally {
+      setDownloadingLatest(false);
     }
   };
 
@@ -488,6 +532,28 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               <h2 className="text-lg sm:text-xl font-bold tracking-tight">Timeline</h2>
               <GripHorizontal className="size-4 text-muted-foreground/30" />
             </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="h-8 font-bold text-xs"
+                onClick={handleViewRenders}
+                disabled={rendersLoading}
+              >
+                {rendersLoading ? <Loader2 className="mr-2 size-3 animate-spin" /> : <Eye className="mr-2 size-3" />}
+                View Videos
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                className="h-8 font-bold text-xs"
+                onClick={handleDownloadLatest}
+                disabled={downloadingLatest}
+              >
+                {downloadingLatest ? <Loader2 className="mr-2 size-3 animate-spin" /> : <Download className="mr-2 size-3" />}
+                Download
+              </Button>
+            </div>
           </div>
 
           <div className="relative group/timeline px-1">
@@ -672,6 +738,67 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         open={editorOpen}
         onOpenChange={setEditorOpen}
       />
+
+      {/* Renders View Dialog */}
+      <Dialog open={viewRendersOpen} onOpenChange={setViewRendersOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Exported Videos</DialogTitle>
+            <DialogDescription>
+              View and download your rendered videos for this project.
+            </DialogDescription>
+          </DialogHeader>
+          {rendersData.length === 0 ? (
+            <div className="py-12 text-center text-muted-foreground">
+              <Video className="size-12 mx-auto mb-4 opacity-20" />
+              <p className="text-sm">No videos rendered yet.</p>
+            </div>
+          ) : (
+            <div className="grid gap-3 py-4">
+              {rendersData.map((render: any) => (
+                <Card key={render.id} className="overflow-hidden">
+                  <CardContent className="p-4 flex items-center justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">
+                        {render.caption || `Render #${render.id.slice(0, 8)}`}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(render.createdAt).toLocaleDateString()} &middot; {render.status}
+                      </p>
+                    </div>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="shrink-0"
+                      onClick={async () => {
+                        setDownloadingId(render.id);
+                        try {
+                          const res = await fetch(`/api/renders/${render.id}/url`);
+                          if (!res.ok) throw new Error("Failed to get download URL");
+                          const { downloadUrl } = await res.json();
+                          window.location.href = downloadUrl;
+                        } catch (err: any) {
+                          toast.error(err.message || "Download failed");
+                        } finally {
+                          setDownloadingId(null);
+                        }
+                      }}
+                      disabled={downloadingId === render.id}
+                    >
+                      {downloadingId === render.id ? (
+                        <Loader2 className="mr-2 size-3 animate-spin" />
+                      ) : (
+                        <Download className="mr-2 size-3" />
+                      )}
+                      Download
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

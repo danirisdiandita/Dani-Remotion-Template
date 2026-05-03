@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Trash2, Upload, Type, Music, Image as ImageIcon, Video, Loader2, Plus, FileText, X, ArrowUp, ArrowDown, Move, Settings2 } from "lucide-react";
+import { Trash2, Upload, Type, Music, Image as ImageIcon, Video, Loader2, Plus, FileText, X, ArrowUp, ArrowDown, Move, Settings2, Eye, Download } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -79,6 +79,7 @@ export function CompositionEditor({ composition, open, onOpenChange }: Compositi
   const [showAddTextForm, setShowAddTextForm] = useState(false);
   const [pendingAddText, setPendingAddText] = useState("");
   const [editingTexts, setEditingTexts] = useState<Record<string, string>>({});
+  const [loadingAssetId, setLoadingAssetId] = useState<string | null>(null);
 
   if (!composition) return null;
 
@@ -109,6 +110,37 @@ export function CompositionEditor({ composition, open, onOpenChange }: Compositi
         toast.success("Updated");
       }
     });
+  };
+
+  const fetchAssetUrl = async (assetId: string, disposition: string = 'inline') => {
+    const res = await fetch(`/api/assets/${assetId}/url?disposition=${disposition}`);
+    if (!res.ok) throw new Error("Failed to get asset URL");
+    const { downloadUrl } = await res.json();
+    return downloadUrl;
+  };
+
+  const handleViewAsset = async (assetId: string) => {
+    setLoadingAssetId(assetId);
+    try {
+      const url = await fetchAssetUrl(assetId, 'inline');
+      window.open(url, '_blank');
+    } catch (err: any) {
+      toast.error(err.message || "Failed to view asset");
+    } finally {
+      setLoadingAssetId(null);
+    }
+  };
+
+  const handleDownloadAsset = async (assetId: string) => {
+    setLoadingAssetId(assetId);
+    try {
+      const url = await fetchAssetUrl(assetId, 'attachment');
+      window.location.href = url;
+    } catch (err: any) {
+      toast.error(err.message || "Failed to download asset");
+    } finally {
+      setLoadingAssetId(null);
+    }
   };
 
   return (
@@ -206,9 +238,31 @@ export function CompositionEditor({ composition, open, onOpenChange }: Compositi
                                     <span className="text-[9px] text-muted-foreground/40 font-mono">ID: {ca.asset.id.slice(-6)}</span>
                                   </div>
                                 </div>
-                                <Button size="icon-xs" variant="ghost" className="opacity-0 group-hover:opacity-100 text-destructive/60 hover:text-destructive hover:bg-destructive/5" onClick={() => deleteAsset(ca.id)}>
-                                  <Trash2 className="size-4" />
-                                </Button>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <Button
+                                    size="icon-xs"
+                                    variant="ghost"
+                                    className="text-muted-foreground/60 hover:text-primary hover:bg-primary/10"
+                                    onClick={() => handleViewAsset(ca.asset.id)}
+                                    disabled={loadingAssetId === ca.asset.id}
+                                    title="View"
+                                  >
+                                    {loadingAssetId === ca.asset.id ? <Loader2 className="size-3.5 animate-spin" /> : <Eye className="size-3.5" />}
+                                  </Button>
+                                  <Button
+                                    size="icon-xs"
+                                    variant="ghost"
+                                    className="text-muted-foreground/60 hover:text-primary hover:bg-primary/10"
+                                    onClick={() => handleDownloadAsset(ca.asset.id)}
+                                    disabled={loadingAssetId === ca.asset.id}
+                                    title="Download"
+                                  >
+                                    <Download className="size-3.5" />
+                                  </Button>
+                                  <Button size="icon-xs" variant="ghost" className="text-destructive/40 hover:text-destructive hover:bg-destructive/5" onClick={() => deleteAsset(ca.id)} title="Delete">
+                                    <Trash2 className="size-3.5" />
+                                  </Button>
+                                </div>
                               </div>
                             ))}
                           </div>
