@@ -88,3 +88,9 @@ Queues the render task to be processed asynchronously via Google Cloud Tasks.
 - Returns immediately with `200 OK`.
 - Robust background processing via Cloud Tasks.
 - Best for batch processing or UI triggers.
+
+
+
+```
+opencode -s ses_218a31654ffeNH54iqOWF1kgph
+```

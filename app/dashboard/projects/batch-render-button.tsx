@@ -49,7 +49,8 @@ export function BatchRenderButton() {
           body: JSON.stringify({
             projectId,
             compositionType: "video",
-            videoSequence: item.videoSequence || item
+            videoSequence: item.videoSequence || item,
+            caption: item.caption
           }),
         });
 

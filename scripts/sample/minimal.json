@@ -1,0 +1,50 @@
+{
+  "hook": "Only 5% of people get all of these right 👇",
+  "quizSequence": [
+    {
+      "question": "What is 2+2?",
+      "options": [
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "correctIndex": 1,
+      "simulatedTapIndex": 1,
+      "audioSrc": "tts/7b53ada2-9268-4927-8e80-a9b72f720578/question_0.wav",
+      "waitPeriodMs": 2000,
+      "durationInFrames": 270
+    },
+    {
+      "question": "What is the capital of Japan?",
+      "options": [
+        "Beijing",
+        "Seoul",
+        "Tokyo",
+        "Bangkok"
+      ],
+      "correctIndex": 2,
+      "simulatedTapIndex": 2,
+      "audioSrc": "tts/7b53ada2-9268-4927-8e80-a9b72f720578/question_1.wav",
+      "waitPeriodMs": 2560,
+      "durationInFrames": 287
+    },
+    {
+      "question": "How many days are in a leap year?",
+      "options": [
+        "364",
+        "365",
+        "366",
+        "367"
+      ],
+      "correctIndex": 2,
+      "simulatedTapIndex": 2,
+      "audioSrc": "tts/7b53ada2-9268-4927-8e80-a9b72f720578/question_2.wav",
+      "waitPeriodMs": 2960,
+      "durationInFrames": 299
+    }
+  ],
+  "sessionId": "7b53ada2-9268-4927-8e80-a9b72f720578",
+  "hookAudioSrc": "tts/7b53ada2-9268-4927-8e80-a9b72f720578/hook.wav",
+  "hookDurationInFrames": 134
+}

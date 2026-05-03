@@ -1,0 +1,78 @@
+{
+  "hook": "Only 5% of 1st year students get ALL of these right 👇",
+  "quizSequence": [
+    {
+      "question": "What is the atomic number of Carbon?",
+      "options": [
+        "4",
+        "6",
+        "8",
+        "12"
+      ],
+      "correctIndex": 1,
+      "simulatedTapIndex": 1,
+      "audioSrc": "tts/c7d41e2a-9b03-4f17-82ad-3e508dc61f94/question_0.wav",
+      "waitPeriodMs": 2800,
+      "durationInFrames": 294
+    },
+    {
+      "question": "What is the pH of pure water?",
+      "options": [
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "correctIndex": 2,
+      "simulatedTapIndex": 2,
+      "audioSrc": "tts/c7d41e2a-9b03-4f17-82ad-3e508dc61f94/question_1.wav",
+      "waitPeriodMs": 3760,
+      "durationInFrames": 323
+    },
+    {
+      "question": "Which bond involves sharing of electrons?",
+      "options": [
+        "Ionic",
+        "Covalent",
+        "Hydrogen",
+        "Metallic"
+      ],
+      "correctIndex": 1,
+      "simulatedTapIndex": 1,
+      "audioSrc": "tts/c7d41e2a-9b03-4f17-82ad-3e508dc61f94/question_2.wav",
+      "waitPeriodMs": 3280,
+      "durationInFrames": 309
+    },
+    {
+      "question": "What is the chemical symbol for Gold?",
+      "options": [
+        "Go",
+        "Gd",
+        "Ag",
+        "Au"
+      ],
+      "correctIndex": 3,
+      "simulatedTapIndex": 3,
+      "audioSrc": "tts/c7d41e2a-9b03-4f17-82ad-3e508dc61f94/question_3.wav",
+      "waitPeriodMs": 2880,
+      "durationInFrames": 297
+    },
+    {
+      "question": "How many electrons can the first shell hold?",
+      "options": [
+        "1",
+        "2",
+        "4",
+        "8"
+      ],
+      "correctIndex": 1,
+      "simulatedTapIndex": 1,
+      "audioSrc": "tts/c7d41e2a-9b03-4f17-82ad-3e508dc61f94/question_4.wav",
+      "waitPeriodMs": 3920,
+      "durationInFrames": 328
+    }
+  ],
+  "sessionId": "c7d41e2a-9b03-4f17-82ad-3e508dc61f94",
+  "hookAudioSrc": "tts/c7d41e2a-9b03-4f17-82ad-3e508dc61f94/hook.wav",
+  "hookDurationInFrames": 170
+}
