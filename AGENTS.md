@@ -167,3 +167,9 @@ API_KEY=ve_... PROJECT_ID=proj_... ./scripts/bulk-upload.sh out/batch/*.mp4
 ```
 
 Each variant becomes a render in the project with status `completed`. View them at `/dashboard/projects/<projectId>`.
+
+
+
+```
+opencode -s ses_20d22fa1dffeMpprshWcaViAx1
+```
