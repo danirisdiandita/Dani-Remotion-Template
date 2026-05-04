@@ -23,6 +23,7 @@ model User {
   assets        Asset[]
   projects      Project[]
   renders       Render[]
+  apiKeys       ApiKey[]
 
   @@map("user")
 }
@@ -173,4 +174,17 @@ model CompositionAsset {
   updatedAt     DateTime    @updatedAt
 
   @@map("composition_asset")
+}
+
+model ApiKey {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String?
+  key       String    @unique
+  lastUsedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("api_key")
 }
