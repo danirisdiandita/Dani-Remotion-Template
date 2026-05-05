@@ -25,7 +25,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
     const renders = await prisma.render.findMany({
       where: { projectId: project.id, userId: session.user.id },
-      orderBy: { createdAt: 'desc' }
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }]
     });
 
     return NextResponse.json(renders);
