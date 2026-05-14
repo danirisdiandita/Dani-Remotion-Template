@@ -39,12 +39,15 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+import random 
 
 import requests
 
 
 CLIPS_DIR = Path("public/video-assets/studley-clips")
 STUDLEY_SRC = "video-assets/studley-outro.mp4"
+
+SRCS = ['video-assets/flashcard-feynman.mp4', 'video-assets/quiz.mp4'] # this is correct 
 
 
 def parse_args():
@@ -113,7 +116,7 @@ def render_variants(template_path, output_dir):
         seq = variant["videoSequence"]
 
         for j, seg in enumerate(seq):
-            seg["src"] = clip_src if j == 0 else STUDLEY_SRC
+            seg["src"] = clip_src if j == 0 else  random.choice(SRCS) #  STUDLEY_SRC
             seg.setdefault("orientation", "center")
 
         props = {"videoSequence": seq}
