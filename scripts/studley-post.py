@@ -1,34 +1,19 @@
 #!/usr/bin/env python3
 """
-Bulk render + upload Dani videos from a template JSON.
+Bulk render + upload Dani videos + auto-post as TikTok drafts.
 
-Each variant auto-fills:
-  - Segment 1 src → random clip from public/video-assets/studley-clips/
-  - Segment 2+ src → video-assets/studley-outro.mp4
+Extends studley.py with AutoPosting API integration (see scripts/post.sh).
+After rendering and uploading to a VideoEngine project, each video is also
+uploaded to the AutoPosting API and posted to TikTok as a draft.
 
 Usage:
-  python3 scripts/studley.py \\
+  python3 scripts/studley-post.py \\
     --api-key ve_... \\
     --project-id proj_... \\
+    --autopost-api-key autoposting-... \\
+    --autopost-connection-id d618... \\
+    --autopost-base-url https://ultimate-tunnel.danirisdiandita.com \\
     scripts/sample/studley/1.json
-
-  python3 scripts/studley.py \\
-    --api-key ve_... \\
-    --project-id proj_... \\
-    --base-url https://video.example.com \\
-    --output-dir out/studley \\
-    scripts/sample/studley/1.json
-
-Template format:
-[
-  {
-    "caption": "I use Notespark AI #studytok",
-    "videoSequence": [
-      { "text": "Overlay text for clip 1" },
-      { "text": "Overlay text for studley outro" }
-    ]
-  }
-]
 """
 
 import argparse
@@ -44,24 +29,20 @@ import requests
 
 CLIPS_DIR = Path("public/video-assets/studley-clips-4s")
 STUDLEY_SRC = "video-assets/studley-outro.mp4"
-
-SRCS = [
-    "video-assets/flashcard-feynman.mp4",
-    "video-assets/quiz.mp4",
-]  # this is correct
+SRCS = ["video-assets/flashcard-feynman.mp4", "video-assets/quiz.mp4"]
 
 
 def parse_args():
     p = argparse.ArgumentParser(
-        description="Bulk render + upload Dani videos with studley outro"
+        description="Bulk render + upload Dani videos with studley outro + TikTok draft posting"
     )
     p.add_argument("template", help="Path to template JSON file")
-    p.add_argument("--api-key", required=True, help="API key (x-api-key header)")
-    p.add_argument("--project-id", required=True, help="Target project ID")
+    p.add_argument("--api-key", default="", help="VideoEngine API key (x-api-key header)")
+    p.add_argument("--project-id", default="", help="Target VideoEngine project ID")
     p.add_argument(
         "--base-url",
         default="http://localhost:3000",
-        help="Base URL of the VideoEngine app (default: http://localhost:3000)",
+        help="VideoEngine base URL (default: http://localhost:3000)",
     )
     p.add_argument(
         "--output-dir",
@@ -71,23 +52,44 @@ def parse_args():
     p.add_argument(
         "--render-only",
         action="store_true",
-        help="Only render videos, skip upload",
+        help="Only render videos, skip all uploads",
     )
     p.add_argument(
         "--upload-only",
         action="store_true",
         help="Only upload existing rendered videos (from --output-dir)",
     )
+    # AutoPosting args
     p.add_argument(
-        "--upload-buffer",
+        "--autopost-api-key",
+        default=os.environ.get("AUTOPOST_API_KEY", ""),
+        help="AutoPosting API key (or set AUTOPOST_API_KEY env var)",
+    )
+    p.add_argument(
+        "--autopost-connection-id",
+        default=os.environ.get("AUTOPOST_CONNECTION_ID", ""),
+        help="TikTok connection ID (or set AUTOPOST_CONNECTION_ID env var)",
+    )
+    p.add_argument(
+        "--autopost-base-url",
+        default=os.environ.get("AUTOPOST_BASE_URL", "https://ultimate-tunnel.danirisdiandita.com"),
+        help="AutoPosting API base URL",
+    )
+    p.add_argument(
+        "--autopost-mode",
+        default="UPLOAD_AS_DRAFT",
+        choices=["UPLOAD_AS_DRAFT", "DIRECT_POST"],
+        help="Post mode: UPLOAD_AS_DRAFT (default) or DIRECT_POST",
+    )
+    p.add_argument(
+        "--skip-autopost",
         action="store_true",
-        help="Upload rendered videos to the buffer.com",
+        help="Skip TikTok auto-posting (only render + project upload)",
     )
     return p.parse_args()
 
 
 def render_variants(template_path, output_dir):
-    """Render all variants. Returns (manifest list, success count, total count)."""
     if not template_path.exists():
         print(f"✗ Template not found: {template_path}")
         sys.exit(1)
@@ -122,12 +124,14 @@ def render_variants(template_path, output_dir):
         seq = variant["videoSequence"]
 
         for j, seg in enumerate(seq):
-            seg["src"] = clip_src if j == 0 else random.choice(SRCS)  #  STUDLEY_SRC
+            seg["src"] = clip_src if j == 0 else random.choice(SRCS)
             seg.setdefault("orientation", "center")
 
         props = {"videoSequence": seq}
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tf:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False
+        ) as tf:
             json.dump(props, tf, ensure_ascii=False)
             props_file = tf.name
 
@@ -179,7 +183,6 @@ def render_variants(template_path, output_dir):
 
 
 def bulk_upload(manifest, api_key, project_id, base_url):
-    """Upload rendered videos via the bulk API."""
     if not manifest:
         print("✗ Nothing to upload")
         sys.exit(1)
@@ -190,7 +193,6 @@ def bulk_upload(manifest, api_key, project_id, base_url):
     print()
     print(f"→ Uploading {len(manifest)} video(s) to project {project_id}...")
 
-    # Step 1: Init bulk upload — get presigned URLs
     items = [
         {
             "fileName": Path(m["file"]).name,
@@ -209,7 +211,6 @@ def bulk_upload(manifest, api_key, project_id, base_url):
 
     print(f"✓ Initialized {len(init_data['items'])} item(s)")
 
-    # Step 2: Upload each file to its presigned URL
     print()
     print("→ Uploading files to S3...")
     upload_ok = 0
@@ -236,11 +237,12 @@ def bulk_upload(manifest, api_key, project_id, base_url):
             print(f"✗ HTTP {put_resp.status_code}")
             failed_ids.append(render_id)
 
-    # Step 3: Confirm successful uploads
     print()
     if upload_ok > 0:
         confirmed_ids = [
-            item["id"] for item in init_data["items"] if item["id"] not in failed_ids
+            item["id"]
+            for item in init_data["items"]
+            if item["id"] not in failed_ids
         ]
         print(f"→ Confirming {len(confirmed_ids)} successful upload(s)...")
 
@@ -252,7 +254,6 @@ def bulk_upload(manifest, api_key, project_id, base_url):
         confirmed = patch_resp.json().get("confirmedCount", 0)
         print(f"✓ Confirmed {confirmed} render(s)")
 
-    # Summary
     failed_count = len(failed_ids)
     print()
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
@@ -265,20 +266,125 @@ def bulk_upload(manifest, api_key, project_id, base_url):
         sys.exit(1)
 
 
+def autopost_upload(manifest, args):
+    """
+    For each video: get presigned S3 URL → upload directly to S3 → create TikTok post.
+    Uses presigned URLs (like post-presigner.sh) to bypass Vercel's 4.5MB body limit.
+    """
+    if not manifest:
+        print("✗ Nothing to autopost")
+        return
+
+    base_url = args.autopost_base_url.rstrip("/")
+    headers = {"Authorization": f"Bearer {args.autopost_api_key}"}
+
+    print()
+    print("=" * 60)
+    print(f"→ AutoPosting {len(manifest)} video(s) as TikTok drafts...")
+    print(f"  Base URL:  {base_url}")
+    print(f"  Mode:      {args.autopost_mode}")
+    print("=" * 60)
+
+    posted = 0
+    failed = 0
+
+    for j, m in enumerate(manifest):
+        filepath = m["file"]
+        basename = Path(filepath).name
+        caption = m.get("caption", basename)
+        title = caption[:80]
+        file_size_mb = os.path.getsize(filepath) / (1024 * 1024)
+
+        print(f"\n  [{j + 1}/{len(manifest)}] {basename} ({file_size_mb:.1f}MB)")
+
+        # Step 1: Get presigned S3 upload URL + media_id
+        print(f"    Getting presigned upload URL...", end=" ", flush=True)
+        try:
+            presign_resp = requests.post(
+                f"{base_url}/api/file/presigner",
+                json={"fileType": "video/mp4"},
+                headers={**headers, "Content-Type": "application/json"},
+            )
+            presign_resp.raise_for_status()
+            presign_data = presign_resp.json()
+            presigned_url = presign_data["data"]["url"]
+            media_id = presign_data["data"]["media_id"]
+            print(f"✓ (media_id: {media_id})")
+        except Exception as e:
+            body = presign_resp.text if hasattr(presign_resp, 'text') else ''
+            trunc = body[:500] + '...' if len(body) > 500 else body
+            print(f"✗ {e} | {trunc}")
+            failed += 1
+            continue
+
+        # Step 2: Upload directly to S3 via presigned URL
+        print(f"    Uploading to S3...", end=" ", flush=True)
+        try:
+            with open(filepath, "rb") as fh:
+                s3_resp = requests.put(
+                    presigned_url,
+                    data=fh,
+                    headers={"Content-Type": "video/mp4"},
+                )
+            s3_resp.raise_for_status()
+            print("✓")
+        except Exception as e:
+            body = s3_resp.text if hasattr(s3_resp, 'text') else ''
+            trunc = body[:500] + '...' if len(body) > 500 else body
+            print(f"✗ {e} | {trunc}")
+            failed += 1
+            continue
+
+        # Step 3: Create TikTok post
+        print(f"    Creating draft post...", end=" ", flush=True)
+        post_body = {
+            "title": title,
+            "caption": caption,
+            "connections": [args.autopost_connection_id],
+            "post_mode": args.autopost_mode,
+            "privacy": "PUBLIC_TO_EVERYONE",
+            "media_type": "VIDEO",
+            "media_ids": [media_id],
+        }
+        try:
+            post_resp = requests.post(
+                f"{base_url}/api/posts",
+                json=post_body,
+                headers={**headers, "Content-Type": "application/json"},
+            )
+            post_resp.raise_for_status()
+            print("✓")
+            posted += 1
+        except Exception as e:
+            body = post_resp.text if hasattr(post_resp, 'text') else ''
+            trunc = body[:500] + '...' if len(body) > 500 else body
+            print(f"✗ {e} | {trunc}")
+            failed += 1
+
+    print()
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    print(f"AutoPost drafts: {posted} posted, {failed} failed")
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
+
 def main():
     args = parse_args()
 
     template_path = Path(args.template)
     output_dir = Path(args.output_dir)
 
+    autopost_enabled = (
+        not args.skip_autopost
+        and bool(args.autopost_api_key)
+        and bool(args.autopost_connection_id)
+    )
+
     if args.upload_only:
-        # Collect existing rendered files from output dir
         files = sorted(output_dir.glob("variant_*.mp4"))
         if not files:
             print(f"✗ No rendered videos found in {output_dir}/")
             sys.exit(1)
 
-        # Load template for captions
         with open(template_path) as f:
             variants = json.load(f)
 
@@ -291,6 +397,10 @@ def main():
 
         print(f"→ Found {len(manifest)} existing video(s) in {output_dir}/")
         bulk_upload(manifest, args.api_key, args.project_id, args.base_url)
+
+        if autopost_enabled:
+            autopost_upload(manifest, args)
+
         return
 
     # Render
@@ -302,11 +412,26 @@ def main():
 
     if args.render_only:
         print()
-        print("→ Render-only mode. Skipping upload.")
+        print("→ Render-only mode. Skipping all uploads.")
         return
 
-    # Upload
-    bulk_upload(manifest, args.api_key, args.project_id, args.base_url)
+    # Upload to VideoEngine project (only if credentials provided)
+    project_upload_enabled = bool(args.api_key) and bool(args.project_id)
+    if project_upload_enabled:
+        bulk_upload(manifest, args.api_key, args.project_id, args.base_url)
+    else:
+        print()
+        print("→ Skipping project upload (no --api-key / --project-id)")
+
+    # Post to TikTok as draft
+    if autopost_enabled:
+        autopost_upload(manifest, args)
+    elif not project_upload_enabled:
+        print()
+        print("→ Nothing to upload (no project creds, no autopost creds)")
+    else:
+        print()
+        print("→ Skipping autopost (--skip-autopost or missing --autopost-api-key / --autopost-connection-id)")
 
 
 if __name__ == "__main__":

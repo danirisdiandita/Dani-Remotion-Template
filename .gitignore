@@ -16,3 +16,5 @@ build
 /assets/nastelbom-background-music-486996.mp3
 /public/video-assets/*
 /scripts/local-studley.sh
+/scripts/sample/*
+*.pyc

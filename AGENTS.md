@@ -129,6 +129,76 @@ npx remotion render Dani out/dani.mp4 --props='{"videoSequence":[{"src":"video-a
 npx remotion render Dani out/dani.mp4 --props=./props/dani.json
 ```
 
+### Reaction Bulk Render + Upload Workflow
+
+**Step 1**: Create a template JSON with captions + text overlays. Each variant has **7 segments** (1 reaction text + 6 web-demo feature texts). Optionally add `reactionSrc` to pin a specific reaction clip (omit for random):
+```json
+[
+  {
+    "caption": "Caption for TikTok #notespark",
+    "videoSequence": [
+      { "text": "Reaction overlay text 🔥" },
+      { "text": "Upload any PDF 📄" },
+      { "text": "AI generates perfect notes 🤖" },
+      { "text": "Quiz yourself 🧠" },
+      { "text": "Review flashcards 💡" },
+      { "text": "Export printable sheets 📝" },
+      { "text": "Master with Feynman 🎯" }
+    ]
+  },
+  {
+    "caption": "Pinned reaction #notespark",
+    "reactionSrc": "video-assets/reactions/007.mp4",
+    "videoSequence": [
+      { "text": "Your brain on manual studying 😵‍💫" },
+      { "text": "Your brain on Notespark AI 🧠⚡️" },
+      { "text": "Step 1: upload PDF 📄" },
+      { "text": "Step 2: let AI cook 🤖" },
+      { "text": "Step 3: learn with quizzes 🧠" },
+      { "text": "Step 4: solidify with flashcards 💡" },
+      { "text": "Step 5: print & go 📝" }
+    ]
+  }
+]
+```
+
+**Step 2**: Batch render all variants (the script picks a random reaction clip — or the one from `reactionSrc` — + all 6 web-demo videos in order):
+```
+python3 scripts/reaction.py \
+  --api-key ve_... \
+  --project-id proj_... \
+  --render-only \
+  scripts/sample/reaction/1.json
+```
+Outputs: `out/reaction/variant_00.mp4`, `variant_01.mp4`, etc.
+
+**Step 3**: Upload to a project:
+```
+python3 scripts/reaction.py \
+  --api-key ve_... \
+  --project-id proj_... \
+  scripts/sample/reaction/1.json
+```
+
+Or upload already-rendered files:
+```
+python3 scripts/reaction.py \
+  --api-key ve_... \
+  --project-id proj_... \
+  --upload-only \
+  scripts/sample/reaction/1.json
+```
+
+Web-demo videos used (auto-filled in order):
+| Index | File | Feature |
+|-------|------|---------|
+| 2 | `video-assets/web-demo/001_upload.mp4` | Upload PDF |
+| 3 | `video-assets/web-demo/002_note.mp4` | AI Notes |
+| 4 | `video-assets/web-demo/003_quiz.mp4` | Quiz |
+| 5 | `video-assets/web-demo/004_flashcard.mp4` | Flashcards |
+| 6 | `video-assets/web-demo/005_printable.mp4` | Printable |
+| 7 | `video-assets/web-demo/006_feynman.mp4` | Feynman |
+
 ### Dani Bulk Render + Upload Workflow
 
 **Step 1**: Create a template JSON file containing an array of variants (one per video you want to generate). Each variant has its own `videoSequence`:
