@@ -26,6 +26,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const { id: projectId } = await params;
     const { searchParams } = new URL(req.url);
     const presigned = searchParams.get("presigned") === "true";
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get("pageSize") || "5", 10)));
 
     const project = await prisma.project.findFirst({
       where: { id: projectId, userId }
@@ -35,13 +37,22 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
-    const renders = await prisma.render.findMany({
-      where: { projectId: project.id, userId },
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }]
-    });
+    const where = { projectId: project.id, userId };
+    const [renders, totalCount] = await Promise.all([
+      prisma.render.findMany({
+        where,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.render.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(totalCount / pageSize);
+    const pagination = { page, pageSize, totalCount, totalPages };
 
     if (!presigned) {
-      return NextResponse.json(renders);
+      return NextResponse.json({ renders, pagination });
     }
 
     const rendersWithUrl = await Promise.all(
@@ -56,7 +67,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       })
     );
 
-    return NextResponse.json(rendersWithUrl);
+    return NextResponse.json({ renders: rendersWithUrl, pagination });
   } catch (error) {
     console.error("❌ Error fetching renders:", error);
     return NextResponse.json({ error: "Failed to fetch renders" }, { status: 500 });
