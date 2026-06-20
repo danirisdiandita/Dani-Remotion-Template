@@ -65,6 +65,7 @@ const VideoSegment: React.FC<{
             fontFamily: '"Montserrat", "Inter", "Noto Color Emoji", sans-serif',
             lineHeight: 1.15,
             letterSpacing: '-1.5px',
+            whiteSpace: 'pre-line',
             color: 'white',
             // TikTok style crisp black border using massive omnidirectional text shadows.
             // This natively supports emojis without causing the 'hollow outline' glitch of WebkitTextStroke

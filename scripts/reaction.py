@@ -1,31 +1,37 @@
 #!/usr/bin/env python3
 """
-Bulk render + upload Dani videos from a template JSON.
+Bulk render + upload Dani videos from a template JSON, pairing reaction
+clips with web-demo feature walkthroughs.
 
 Each variant auto-fills:
-  - Segment 1 src → random clip from public/video-assets/studley-clips/
-  - Segment 2+ src → video-assets/studley-outro.mp4
+  - Segment 1 src → random clip from public/video-assets/reactions/
+  - Segments 2-7 src → public/video-assets/web-demo/001_upload.mp4 through 006_feynman.mp4 (in order)
 
 Usage:
-  python3 scripts/studley.py \\
-    --api-key ve_... \\
-    --project-id proj_... \\
-    scripts/sample/studley/1.json
+  python3 scripts/reaction.py \
+    --api-key ve_... \
+    --project-id proj_... \
+    scripts/sample/reaction/1.json
 
-  python3 scripts/studley.py \\
-    --api-key ve_... \\
-    --project-id proj_... \\
-    --base-url https://video.example.com \\
-    --output-dir out/studley \\
-    scripts/sample/studley/1.json
+  python3 scripts/reaction.py \
+    --api-key ve_... \
+    --project-id proj_... \
+    --base-url https://video.example.com \
+    --output-dir out/reaction \
+    scripts/sample/reaction/1.json
 
 Template format:
 [
   {
-    "caption": "I use Notespark AI #studytok",
+    "caption": "Caption for upload",
     "videoSequence": [
-      { "text": "Overlay text for clip 1" },
-      { "text": "Overlay text for studley outro" }
+      { "text": "Reaction overlay text" },
+      { "text": "Web demo 1 overlay text" },
+      { "text": "Web demo 2 overlay text" },
+      { "text": "Web demo 3 overlay text" },
+      { "text": "Web demo 4 overlay text" },
+      { "text": "Web demo 5 overlay text" },
+      { "text": "Web demo 6 overlay text" }
     ]
   }
 ]
@@ -42,18 +48,38 @@ from pathlib import Path
 
 import requests
 
-CLIPS_DIR = Path("public/video-assets/studley-clips-4s")
-STUDLEY_SRC = "video-assets/studley-outro.mp4"
+REACTIONS_DIR = Path("public/video-assets/reactions")
+WEB_DEMO_DIR = Path("public/video-assets/web-demo")
 
-SRCS = [
-    "video-assets/flashcard-feynman.mp4",
-    "video-assets/quiz.mp4",
-]  # this is correct
+# Sorted list of web-demo sources
+WEB_DEMO_SRCS = sorted(
+    str(f).replace("public/", "", 1)
+    for f in WEB_DEMO_DIR.glob("*.mp4")
+)
+
+
+def resolve_reaction_src(variant, reactions):
+    """Resolve optional reactionSrc from variant. Returns src string or None."""
+    reaction_src = variant.get("reactionSrc")
+    if not reaction_src:
+        return None
+
+    # Normalise: strip public/ prefix if present
+    clean = reaction_src.replace("public/", "", 1)
+
+    # Check if it matches an existing file in reactions dir
+    for f in reactions:
+        f_clean = str(f).replace("public/", "", 1)
+        if f_clean == clean:
+            return clean
+
+    print(f"  [!] reactionSrc '{reaction_src}' not found in {REACTIONS_DIR}, falling back to random")
+    return None
 
 
 def parse_args():
     p = argparse.ArgumentParser(
-        description="Bulk render + upload Dani videos with studley outro"
+        description="Bulk render + upload Dani videos with reaction + web-demo walkthrough"
     )
     p.add_argument("template", help="Path to template JSON file")
     p.add_argument("--api-key", required=True, help="API key (x-api-key header)")
@@ -65,8 +91,8 @@ def parse_args():
     )
     p.add_argument(
         "--output-dir",
-        default="out/studley",
-        help="Output directory for rendered videos (default: out/studley)",
+        default="out/reaction",
+        help="Output directory for rendered videos (default: out/reaction)",
     )
     p.add_argument(
         "--render-only",
@@ -83,18 +109,33 @@ def parse_args():
         action="store_true",
         help="Upload rendered videos to the buffer.com",
     )
+    p.add_argument(
+        "--render-timeout",
+        type=int,
+        default=120000,
+        help="Timeout per render in ms (default: 120000 / 2 min). Increase for long videos.",
+    )
+    p.add_argument(
+        "--no-timeout",
+        action="store_true",
+        help="Disable render timeout entirely",
+    )
     return p.parse_args()
 
 
-def render_variants(template_path, output_dir):
+def render_variants(template_path, output_dir, render_timeout=120000, no_timeout=False):
     """Render all variants. Returns (manifest list, success count, total count)."""
     if not template_path.exists():
         print(f"✗ Template not found: {template_path}")
         sys.exit(1)
 
-    clips = sorted(CLIPS_DIR.glob("*.mp4"))
-    if not clips:
-        print(f"✗ No clips found in {CLIPS_DIR}")
+    reactions = sorted(REACTIONS_DIR.glob("*.mp4"))
+    if not reactions:
+        print(f"✗ No reaction clips found in {REACTIONS_DIR}")
+        sys.exit(1)
+
+    if not WEB_DEMO_SRCS:
+        print(f"✗ No web-demo videos found in {WEB_DEMO_DIR}")
         sys.exit(1)
 
     with open(template_path) as f:
@@ -102,28 +143,40 @@ def render_variants(template_path, output_dir):
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"→ Clips available: {len(clips)}")
-    print(f"→ Variants:         {len(variants)}")
-    print(f"→ Output:           {output_dir}/")
+    print(f"→ Reaction clips available: {len(reactions)}")
+    print(f"→ Web-demo videos available: {len(WEB_DEMO_SRCS)}")
+    print(f"→ Variants:                  {len(variants)}")
+    print(f"→ Output:                    {output_dir}/")
     print()
 
     manifest = []
     failed = []
 
     for i, variant in enumerate(variants):
-        clip = random.choice(clips)
-        clip_src = (
-            str(clip).replace("public/", "", 1)
-            if str(clip).startswith("public/")
-            else str(clip)
-        )
+        reaction_src = resolve_reaction_src(variant, reactions)
+        if reaction_src is None:
+            reaction = random.choice(reactions)
+            reaction_src = (
+                str(reaction).replace("public/", "", 1)
+                if str(reaction).startswith("public/")
+                else str(reaction)
+            )
 
         caption = variant.get("caption", "")
         seq = variant["videoSequence"]
 
+        if len(seq) != len(WEB_DEMO_SRCS) + 1:
+            print(f"  [!] Variant {i}: expected {len(WEB_DEMO_SRCS) + 1} segments, got {len(seq)}")
+            print(f"      Make sure your template has 1 reaction text + {len(WEB_DEMO_SRCS)} web-demo texts")
+
         for j, seg in enumerate(seq):
-            seg["src"] = clip_src if j == 0 else random.choice(SRCS)  #  STUDLEY_SRC
-            seg.setdefault("orientation", "center")
+            if j == 0:
+                seg["src"] = reaction_src
+            else:
+                demo_idx = j - 1
+                if demo_idx < len(WEB_DEMO_SRCS):
+                    seg["src"] = WEB_DEMO_SRCS[demo_idx]
+            seg.setdefault("orientation", "bottom")
 
         props = {"videoSequence": seq}
 
@@ -138,17 +191,21 @@ def render_variants(template_path, output_dir):
 
         print(f"  [{i + 1}/{len(variants)}] {label} ... ", end="", flush=True)
 
+        cmd = [
+            "npx",
+            "remotion",
+            "render",
+            "Dani",
+            str(output_file),
+            f"--props={props_file}",
+        ]
+        if no_timeout:
+            cmd.append("--timeout=99999999")
+        else:
+            cmd.append(f"--timeout={render_timeout}")
+
         result = subprocess.run(
-            [
-                "npx",
-                "remotion",
-                "render",
-                "Dani",
-                str(output_file),
-                f"--props={props_file}",
-                "--gl=egl",
-                '--chromium-flags="--use-gl=egl --use-angle=gl --ignore-gpu-blocklist --disable-gpu-sandbox"',
-            ],
+            cmd,
             capture_output=True,
             text=True,
         )
@@ -294,7 +351,7 @@ def main():
         return
 
     # Render
-    manifest, success, total = render_variants(template_path, output_dir)
+    manifest, success, total = render_variants(template_path, output_dir, args.render_timeout, args.no_timeout)
 
     if success == 0:
         print("✗ No videos rendered successfully")
