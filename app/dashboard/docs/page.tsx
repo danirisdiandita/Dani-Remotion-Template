@@ -75,12 +75,39 @@ export default function DocsPage() {
             </div>
           </div>
           <div className="space-y-2">
-            <h3 className="font-semibold text-sm">cURL Example</h3>
-            <div className="relative">
-              <pre className="text-xs bg-muted p-3 rounded-lg overflow-x-auto pr-10"><code>{`curl -H "x-api-key: ve_your_api_key_here" \\
+            <h3 className="font-semibold text-sm">Query Parameters</h3>
+            <div className="text-sm space-y-1.5">
+              <div className="flex items-baseline gap-2">
+                <code className="text-xs font-semibold bg-muted px-1.5 py-0.5 rounded">presigned</code>
+                <span className="text-xs text-muted-foreground">optional · default <code className="text-xs bg-muted px-1 py-0.5 rounded">false</code></span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                When <code className="text-xs bg-muted px-1 py-0.5 rounded">true</code>, each render gets an <code className="text-xs bg-muted px-1 py-0.5 rounded">s3Url</code> field with a presigned download URL instead of the raw <code className="text-xs bg-muted px-1 py-0.5 rounded">s3Key</code>.
+              </p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <h3 className="font-semibold text-sm">cURL Examples</h3>
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Default (returns <code className="text-xs bg-muted px-1 py-0.5 rounded">s3Key</code>)</p>
+                <div className="relative">
+                  <pre className="text-xs bg-muted p-3 rounded-lg overflow-x-auto pr-10"><code>{`curl -H "x-api-key: ve_your_api_key_here" \\
   https://video-templater.up.railway.app/api/projects/cmnuxllk5000021nqs85csz1f/renders`}</code></pre>
-              <div className="absolute top-2 right-2">
-                <CopyButton text={`curl -H "x-api-key: ve_your_api_key_here" \\\n  https://video-templater.up.railway.app/api/projects/cmnuxllk5000021nqs85csz1f/renders`} />
+                  <div className="absolute top-2 right-2">
+                    <CopyButton text={`curl -H "x-api-key: ve_your_api_key_here" \\\n  https://video-templater.up.railway.app/api/projects/cmnuxllk5000021nqs85csz1f/renders`} />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">With presigned URL (returns <code className="text-xs bg-muted px-1 py-0.5 rounded">s3Url</code>)</p>
+                <div className="relative">
+                  <pre className="text-xs bg-muted p-3 rounded-lg overflow-x-auto pr-10"><code>{`curl -H "x-api-key: ve_your_api_key_here" \\
+  "https://video-templater.up.railway.app/api/projects/cmnuxllk5000021nqs85csz1f/renders?presigned=true"`}</code></pre>
+                  <div className="absolute top-2 right-2">
+                    <CopyButton text={`curl -H "x-api-key: ve_your_api_key_here" \\\n  "https://video-templater.up.railway.app/api/projects/cmnuxllk5000021nqs85csz1f/renders?presigned=true"`} />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
