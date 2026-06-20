@@ -18,6 +18,28 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
+    async sendResetPassword({ user, url, token }, request) {
+      console.log(`📧 Sending reset password email to ${user.email}...`);
+      try {
+        const { data, error } = await resend.emails.send({
+          from: `Video Engine <onboarding@resend.dev>`,
+          to: user.email,
+          subject: `Reset your password - ${CONSTANTS.PRODUCTION_SUITE_NAME}`,
+          text: `Click here to reset your password: ${url}`,
+        });
+
+        if (error) {
+          console.error("❌ Resend error:", error);
+        } else {
+          console.log("✅ Reset password email sent successfully:", data?.id);
+        }
+      } catch (err) {
+        console.error("❌ Failed to send reset password email:", err);
+      }
+    },
+    onPasswordReset: async ({ user }, request) => {
+      console.log(`Password for user ${user.email} has been reset.`);
+    },
   },
   emailVerification: {
     sendOnSignUp: true,

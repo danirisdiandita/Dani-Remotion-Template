@@ -5,10 +5,10 @@ set -euo pipefail
 # Local Studley — render Dani videos locally, no upload.
 #
 # Usage:
-#   ./scripts/local-studley-no-post.sh <template.json> [output_dir]
+#   ./scripts/local-studley-no-post.sh <template42.json> [output_dir]
 #
 # Example:
-#   ./scripts/local-studley-no-post.sh scripts/sample/studley/33.json out/studley
+#   ./scripts/local-studley-no-post.sh scripts/sample/studley/42.json out/studley
 #
 # Template JSON format (no src needed — auto-filled):
 # [
@@ -40,10 +40,10 @@ TEMPLATE_JSON="${1:-}"
 OUTPUT_DIR="${2:-out/studley}"
 
 if [ -z "$TEMPLATE_JSON" ]; then
-  echo "Usage: $0 <template.json> [output_dir]"
+  echo "Usage: $0 <template42.json> [output_dir]"
   echo ""
   echo "Example:"
-  echo "  $0 scripts/sample/studley/33.json out/studley"
+  echo "  $0 scripts/sample/studley/42.json out/studley"
   exit 1
 fi
 
@@ -86,7 +86,7 @@ FAILED=()
 for i in $(seq 0 $((VARIANT_COUNT - 1))); do
   RANDOM_CLIP=$(ls "$CLIPS_DIR"/*.mp4 | shuf -n 1)
 
-  PROPS_FILE="/tmp/studley-props-$i.json"
+  PROPS_FILE="/tmp/studley-props-$i42.json"
 
   FIRST_TEXT=$(python3 -c "
 import json, sys
