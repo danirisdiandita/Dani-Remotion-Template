@@ -18,6 +18,7 @@ import {
   Copy,
   Check,
   ChevronLeft,
+  ChevronRight,
   Trash2,
   RotateCcw,
   Image as ImageIcon
@@ -67,7 +68,12 @@ export function RendersClient({ projectId, projectName, compositionType }: Rende
   const labelPlural = isZip ? "Files" : "Videos";
   const queryClient = useQueryClient();
 
-  const { data: rendersArray = [], isLoading: rendersLoading } = useProjectRenders(projectId);
+  const [page, setPage] = useState(1);
+  const pageSize = 5;
+  const { data, isLoading: rendersLoading } = useProjectRenders(projectId, page, pageSize);
+
+  const rendersArray = data?.renders ?? [];
+  const pagination = data?.pagination ?? null;
 
   const parsedRenders = useMemo(() => {
     return rendersArray.map((r: any) => ({
@@ -334,7 +340,7 @@ export function RendersClient({ projectId, projectName, compositionType }: Rende
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((gen: RenderRecord) => (
-            <Card key={gen.id} className="overflow-hidden relative group border bg-card text-card-foreground gap-y-2">
+            <Card key={gen.id} className={cn("overflow-hidden relative group border bg-card text-card-foreground gap-y-2 transition-all", gen.checklisted && "bg-gray-500/10 border-gray-500 text-gray-500")}>
               <div className="absolute top-4 left-4 z-20">
                 <Checkbox
                   checked={gen.checklisted}
@@ -346,7 +352,7 @@ export function RendersClient({ projectId, projectName, compositionType }: Rende
                 <div className="p-4 flex flex-col gap-4">
                   <div className="space-y-1.5 pr-2">
                     <h3
-                      className="font-semibold text-sm line-clamp-2 leading-snug cursor-pointer group-hover:text-primary transition-colors"
+                      className={cn("font-semibold text-sm line-clamp-2 leading-snug cursor-pointer group-hover:text-primary transition-colors", gen.checklisted && "line-through")}
                       onClick={() => handleToggleCheck(gen.id, !gen.checklisted)}
                     >
                       {gen.caption || `Render #${gen.id.slice(0, 8).toUpperCase()}`}
@@ -407,6 +413,34 @@ export function RendersClient({ projectId, projectName, compositionType }: Rende
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {pagination && pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between pt-4">
+          <p className="text-xs text-muted-foreground">
+            Page {pagination.page} of {pagination.totalPages} ({pagination.totalCount} total)
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={pagination.page <= 1}
+            >
+              <ChevronLeft className="size-4 mr-1" />
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={pagination.page >= pagination.totalPages}
+            >
+              Next
+              <ChevronRight className="size-4 ml-1" />
+            </Button>
+          </div>
         </div>
       )}
 
