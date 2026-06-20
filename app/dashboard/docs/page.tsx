@@ -142,6 +142,49 @@ export default function DocsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            Delete Render
+            <Badge variant="destructive">DELETE</Badge>
+          </CardTitle>
+          <CardDescription>
+            Delete a render video by ID. Removes the file from S3 and the database record.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <h3 className="font-semibold text-sm">Endpoint</h3>
+            <div className="relative">
+              <pre className="text-xs bg-muted p-3 rounded-lg overflow-x-auto pr-10"><code>DELETE /api/renders/{`{renderId}`}</code></pre>
+              <div className="absolute top-2 right-2">
+                <CopyButton text="DELETE /api/renders/{renderId}" />
+              </div>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <h3 className="font-semibold text-sm">cURL Example</h3>
+            <div className="relative">
+              <pre className="text-xs bg-muted p-3 rounded-lg overflow-x-auto pr-10"><code>{`curl -X DELETE \\
+  -H "x-api-key: ve_your_api_key_here" \\
+  https://video-templater.up.railway.app/api/renders/cmnx5cezc0001qzfzy0xponzc`}</code></pre>
+              <div className="absolute top-2 right-2">
+                <CopyButton text={`curl -X DELETE \\\n  -H "x-api-key: ve_your_api_key_here" \\\n  https://video-templater.up.railway.app/api/renders/cmnx5cezc0001qzfzy0xponzc`} />
+              </div>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <h3 className="font-semibold text-sm">Response</h3>
+            <div className="relative">
+              <pre className="text-xs bg-muted p-3 rounded-lg overflow-x-auto pr-10"><code>{`{ "success": true }`}</code></pre>
+              <div className="absolute top-2 right-2">
+                <CopyButton text='{ "success": true }' />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

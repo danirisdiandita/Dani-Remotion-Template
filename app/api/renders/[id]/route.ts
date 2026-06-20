@@ -1,27 +1,29 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { getUserByApiKey } from "@/lib/api-key";
 import { deleteMultipleFromS3, downloadToBuffer } from "@/lib/s3-utils";
 import AdmZip from "adm-zip";
 import { NextResponse } from "next/server";
 
+async function getUserId(req: Request): Promise<string | null> {
+  const apiKeyUser = await getUserByApiKey(req);
+  if (apiKeyUser) return apiKeyUser.id;
+  const session = await auth.api.getSession({ headers: await headers() });
+  return session?.user?.id ?? null;
+}
+
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers()
-    });
-
-    if (!session?.user) {
+    const userId = await getUserId(req);
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id } = await params;
 
     const render = await prisma.render.findFirst({
-      where: {
-        id,
-        userId: session.user.id
-      }
+      where: { id, userId }
     });
 
     if (!render || !render.s3Key) {
@@ -62,22 +64,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers()
-    });
-
-    if (!session?.user) {
+    const userId = await getUserId(req);
+    if (!userId) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id } = await params;
 
-    // Verify ownership
     const render = await prisma.render.findFirst({
-      where: {
-        id,
-        userId: session.user.id
-      }
+      where: { id, userId }
     });
 
     if (!render) {
@@ -109,11 +104,8 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers()
-    });
-
-    if (!session?.user) {
+    const userId = await getUserId(req);
+    if (!userId) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -122,10 +114,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const { checklisted } = body;
 
     const render = await prisma.render.findFirst({
-      where: {
-        id,
-        userId: session.user.id
-      }
+      where: { id, userId }
     });
 
     if (!render) {
